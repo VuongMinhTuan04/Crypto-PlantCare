@@ -16,8 +16,8 @@
 
 ## Cấu trúc dự án:
 
-Crypto-PlantCare/ ├── client/ 
-# ReactJS frontend 
+Crypto-PlantCare/ 
+├── frontend/ 
 │ ├── public/ # Các tệp công khai (HTML, hình ảnh...) 
 │ ├── src/ # Mã nguồn ReactJS 
 │ ├── package.json # Các phụ thuộc của frontend 
