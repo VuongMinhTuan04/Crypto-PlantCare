@@ -33,7 +33,7 @@ function GameScreen() {
       route: "/game-playing/activities",
       backgroundImage: "/assets/images/image.png",
       iconImage: "/assets/images/Rectangle 137.png",
-    },
+    },  
   ];
 
   const handleEventOptionClick = (option) => {

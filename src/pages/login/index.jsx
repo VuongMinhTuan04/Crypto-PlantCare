@@ -1,14 +1,15 @@
+import { useWallet } from "@solana/wallet-adapter-react";
+import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
+import "@solana/wallet-adapter-react-ui/styles.css";
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-
+import "./custom.css";
 const LoginPage = () => {
-  const navigate = useNavigate()
+  const { publicKey, disconnect } = useWallet();
+
+  const navigate = useNavigate();
   const loginOptions = [
     {
-      id: 1,
-      buttonText: "Kết nối ví",
-      iconImage: "/assets/images/Phantom-Icon_Circle_128x128.png",
-      route: "/game-login/solana",
-    }, {
       id: 2,
       buttonText: "Đăng nhập với facebook",
       iconImage: "/assets/images/facebook-icon.png",
@@ -17,8 +18,21 @@ const LoginPage = () => {
   ];
 
   const handleClickNavigate = (option) => {
-    navigate(option.route)
-  }
+    navigate(option.route);
+  };
+
+  useEffect(() => {
+    try {
+      if (publicKey) {
+        alert("Đã có key: " + publicKey.toBase58())
+        navigate("/game-login/solana");
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  }, [publicKey, navigate])
+
+
 
   return (
     <div className="flex items-center justify-center h-full w-full bg-background-green">
@@ -34,6 +48,11 @@ const LoginPage = () => {
             ------------- Sign in to your account --------------
           </p>
         </div>
+        <div className="w-full">
+          {/* Nút để kết nối ví */}
+          <WalletMultiButton/>
+        </div>
+
         <div className="space-y-3">
           {loginOptions.map((option, index) => (
             <button
