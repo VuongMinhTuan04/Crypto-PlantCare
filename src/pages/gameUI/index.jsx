@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import UserActivityView from "../activities";
 import LeaderBoard from "../leaderboard/leader";
+import SettingsPage from "../settingform";
 import Wallet from "../wallet";
 import GameHome from "./GameHome";
 import ShopPage from "./GameShopping";
@@ -20,19 +20,19 @@ function GameScreen() {
       id: 2,
       route: "/game-playing/leader-board",
       backgroundImage: "/assets/images/image.png",
-      iconImage: "/assets/images/Rectangle 135.png",
+      iconImage: "/assets/images/crown.png",
     },
     {
       id: 3,
       route: "/game-playing/wallet",
       backgroundImage: "/assets/images/image.png",
-      iconImage: "/assets/images/Rectangle 136.png",
+      iconImage: "/assets/images/wallet.png",
     },
     {
       id: 4,
       route: "/game-playing/activities",
       backgroundImage: "/assets/images/image.png",
-      iconImage: "/assets/images/Rectangle 137.png",
+      iconImage: "/assets/images/settings.png",
     },  
   ];
 
@@ -60,7 +60,7 @@ function GameScreen() {
       case "/game-playing/wallet":
         return <Wallet />;
       case "/game-playing/activities":
-        return <UserActivityView />;
+        return <SettingsPage />;
       default:
         return <GameHome />;
     }

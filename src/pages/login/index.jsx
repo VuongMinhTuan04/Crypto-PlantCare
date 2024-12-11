@@ -1,38 +1,31 @@
-import { useWallet } from "@solana/wallet-adapter-react";
-import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
+import { useAuth } from "@/hooks/useContext";
+import { GoogleLogin, GoogleOAuthProvider } from "@react-oauth/google";
 import "@solana/wallet-adapter-react-ui/styles.css";
-import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "./custom.css";
 const LoginPage = () => {
-  const { publicKey, disconnect } = useWallet();
-
+  const { setUser } = useAuth();
   const navigate = useNavigate();
-  const loginOptions = [
-    {
-      id: 2,
-      buttonText: "Đăng nhập với facebook",
-      iconImage: "/assets/images/facebook-icon.png",
-      route: "/game-login/solana",
-    },
-  ];
-
-  const handleClickNavigate = (option) => {
-    navigate(option.route);
+  const handleGoogleLoginSuccess = (credentialResponse) => {
+    console.log(credentialResponse);
+    // Gửi token đến backend để xác thực
+    fetch("http://localhost:3000/auth/google", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token: credentialResponse.credential }),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        localStorage.setItem("tokenGoogle", JSON.stringify(data))
+        try {
+          setUser(data.user);
+        } catch (error) {
+          console.log(error);
+        }
+      })
+      .catch((err) => console.error(err));
+    navigate("/game-login/solana");
   };
-
-  useEffect(() => {
-    try {
-      if (publicKey) {
-        alert("Đã có key: " + publicKey.toBase58())
-        navigate("/game-login/solana");
-      }
-    } catch (error) {
-      console.log(error);
-    }
-  }, [publicKey, navigate])
-
-
 
   return (
     <div className="flex items-center justify-center h-full w-full bg-background-green">
@@ -48,32 +41,15 @@ const LoginPage = () => {
             ------------- Sign in to your account --------------
           </p>
         </div>
-        <div className="w-full">
-          {/* Nút để kết nối ví */}
-          <WalletMultiButton/>
-        </div>
 
-        <div className="space-y-3">
-          {loginOptions.map((option, index) => (
-            <button
-              key={option.id}
-              onClick={() => handleClickNavigate(option)}
-              className={`border rounded-full py-2 px-4 flex items-center justify-center transition-transform transform duration-300 ease-in-out ${
-                index === 0
-                  ? "bg-green-600 hover:bg-green-700 active:scale-95 text-white"
-                  : "bg-blue-600 hover:bg-blue-700 active:scale-95 text-white"
-              } hover:shadow-lg focus:ring-2 focus:ring-offset-2 focus:ring-green-400`}
-              style={{ width: "100%" }}
-            >
-              <img
-                src={option.iconImage}
-                alt={option.buttonText}
-                className="w-6 h-6 mr-2 transition-transform transform duration-200 group-hover:scale-110"
-              />
-              {option.buttonText}
-            </button>
-          ))}
-        </div>
+        <GoogleOAuthProvider clientId="426378821599-58dil04pq5oropr6siq4su8qus2tgqci.apps.googleusercontent.com">
+          <GoogleLogin
+            onSuccess={handleGoogleLoginSuccess}
+            onError={() => {
+              console.log("Login Failed");
+            }}
+          />
+        </GoogleOAuthProvider>
       </div>
     </div>
   );

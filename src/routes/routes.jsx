@@ -22,10 +22,11 @@ const publicRoutes = [
   { path: "/game-invitebonus", component: InviteBonus, layout: LayoutGame },
   { path: "/game-shopping", component: ShopPage, layout: LayoutGame },
   { path: "/wallet", component: Wallet, layout: LayoutGame },
-  // { path: "/wallet/information", component: WalletInfo, layout: LayoutGame },
+  // { path: "/wallet/information", component: WalletBalance, layout: LayoutGame },
 ];
 
 const privateRoutes = [];
 
 export { privateRoutes, publicRoutes };
 
+ 

@@ -1,23 +1,25 @@
+import { createAsset, userDetail } from "@/utils/authServices";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { Connection, PublicKey } from "@solana/web3.js";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-
 const FoundWallet = () => {
   const { publicKey } = useWallet();
   const [balance, setBalance] = useState(null);
   const [tokens, setTokens] = useState([]);
-
+  
   useEffect(() => {
     if (publicKey) {
-      const connection = new Connection("https://api.devnet.solana.com", "confirmed");
+      const connection = new Connection(
+        "https://api.devnet.solana.com",
+        "confirmed"
+      );
 
       // Lấy số dư SOL
       const fetchBalance = async () => {
         const walletPublicKey = new PublicKey(publicKey);
         const lamports = await connection.getBalance(walletPublicKey);
         setBalance(lamports / 1e9); // Chuyển đổi từ lamports sang SOL
-        
       };
 
       // // Lấy danh sách token
@@ -28,7 +30,7 @@ const FoundWallet = () => {
       //   });
 
       //   const tokenList = tokenAccounts.value.map((account) => {
-          
+
       //     const accountInfo = account.account.data.parsed.info;
       //     return {
       //       mint: accountInfo.mint,
@@ -36,7 +38,7 @@ const FoundWallet = () => {
       //     };
       //   });
       //   console.log(tokenList);
-        
+
       //   setTokens(tokenList);
       // };
 
@@ -44,7 +46,6 @@ const FoundWallet = () => {
       // fetchTokens();
     }
   }, [publicKey]);
-
 
   const navigate = useNavigate();
   const icons = [
@@ -60,6 +61,28 @@ const FoundWallet = () => {
     },
   ];
 
+  useEffect(() => {
+    const data = async () => {
+      try {
+        await userDetail('giang1231231231');
+      } catch (error) {
+        console.log(error);
+      }
+    };
+    data();
+  });
+
+  const handleCheck = async () => {
+    try {
+      const response = await createAsset(
+        "giang1231231231",
+        "giangtvps33213@fpt.edu.vn"
+      );
+      console.log(response);
+    } catch (error) {
+      console.log(error);
+    }
+  };
   return (
     <div className="flex flex-col items-center bg-background-green h-full justify-center">
       <h1 className="text-3xl font-bold text-gray-800 mb-10">
@@ -112,7 +135,7 @@ const FoundWallet = () => {
       >
         DEPOSIT
       </button>
-  
+      <button onClick={() => handleCheck()}>Check</button>
     </div>
   );
 };
