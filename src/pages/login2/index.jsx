@@ -1,4 +1,4 @@
-import { createAsset, userDetail } from "@/utils/authServices";
+import { userDetail } from "@/utils/authServices";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { Connection, PublicKey } from "@solana/web3.js";
 import { useEffect, useState } from "react";
@@ -6,7 +6,6 @@ import { useNavigate } from "react-router-dom";
 const FoundWallet = () => {
   const { publicKey } = useWallet();
   const [balance, setBalance] = useState(null);
-  const [tokens, setTokens] = useState([]);
   
   useEffect(() => {
     if (publicKey) {
@@ -64,7 +63,7 @@ const FoundWallet = () => {
   useEffect(() => {
     const data = async () => {
       try {
-        await userDetail('giang1231231231');
+        await userDetail('111104434572990771310');
       } catch (error) {
         console.log(error);
       }
@@ -72,17 +71,7 @@ const FoundWallet = () => {
     data();
   });
 
-  const handleCheck = async () => {
-    try {
-      const response = await createAsset(
-        "giang1231231231",
-        "giangtvps33213@fpt.edu.vn"
-      );
-      console.log(response);
-    } catch (error) {
-      console.log(error);
-    }
-  };
+ 
   return (
     <div className="flex flex-col items-center bg-background-green h-full justify-center">
       <h1 className="text-3xl font-bold text-gray-800 mb-10">
@@ -135,7 +124,7 @@ const FoundWallet = () => {
       >
         DEPOSIT
       </button>
-      <button onClick={() => handleCheck()}>Check</button>
+ 
     </div>
   );
 };

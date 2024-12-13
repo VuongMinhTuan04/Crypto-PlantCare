@@ -45,7 +45,7 @@ app.post("/auth/google", async (req, res) => {
       { expiresIn: "1h" }
     );
 
-    res.json({ token: jwtToken, user: { email, name, picture } });
+    res.json({ token: jwtToken, user: {sub, email, name, picture } });
   } catch (error) {
     console.error(error);
     res.status(401).send("Invalid token");
