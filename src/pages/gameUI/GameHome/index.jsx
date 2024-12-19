@@ -1,5 +1,5 @@
 import ItemShopModal from "@/components/gameComponents/buynfts";
-import { userDetail } from "@/utils/authServices";
+import { userDetail, userDetailGoogle } from "@/utils/authServices";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -7,31 +7,45 @@ function GameHome() {
   const navigate = useNavigate();
   const [shovelClicked, setShovelClicked] = useState(false);
   const [NFTs, setNFTs] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [user, setUser] = useState(null);
-  const [isLoading, setIsLoading] = useState(true); // Thêm state loading
+  const [treeAsset, setTreeAsset] = useState(null);
 
   useEffect(() => {
-    dataUser();
-  }, []);
+    const fetchUserData = async () => {
+      try {
+        const tokenGoogle = localStorage.getItem("tokenGoogle");
+        if (tokenGoogle) {
+          const parsedToken = JSON.parse(tokenGoogle);
+          const resp = await userDetailGoogle(parsedToken);
+          setUser(resp.user);
 
-  const dataUser = async () => {
-    setIsLoading(true); // Bắt đầu loading
-    const currentUser = JSON.parse(localStorage.getItem("tokenGoogle"));
-    if (currentUser === null) {
-      setIsLoading(false);
-      return;
-    }
-    
-    try {
-      setUser(currentUser.user);
-      const resp = await userDetail(currentUser.user.sub);
-      setNFTs(resp.data);
-      setIsLoading(false); // Kết thúc loading khi đã có dữ liệu
-    } catch (error) {
-      console.log(error);
-      setIsLoading(false); // Kết thúc loading nếu có lỗi
-    }
-  };
+          if (resp.user?.userId) {
+            const nftResp = await userDetail(resp.user.userId);
+            const fetchedNFTs = nftResp.data || [];
+            setNFTs(fetchedNFTs);
+
+            // Lọc và lấy cây đầu tiên
+            const availableTrees = fetchedNFTs.filter(
+              (nft) => 
+                nft.type === "UniqueAsset" && 
+                ["Green Giant Tree", "Golden Giant Tree", "Purple Giant Tree"].includes(nft.item?.name)
+            );
+
+            if (availableTrees.length > 0) {
+              setTreeAsset(availableTrees[0]);
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Failed to fetch user data:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchUserData();
+  }, []);
 
   const handleBasketClick = () => {
     navigate("/game-shopping");
@@ -41,16 +55,6 @@ function GameHome() {
     setShovelClicked((prev) => !prev);
   };
 
-  // Xử lý an toàn cho việc lấy hình ảnh cây
-  const treeAssets = NFTs.filter(
-    (item) => item.type === "UniqueAsset" && item.item?.collection?.name === "Trees"
-  );
-  const treeAssetsArray = Array.isArray(treeAssets) 
-    ? (treeAssets.length === 1 ? treeAssets[0] : treeAssets)
-    : treeAssets;
-  const treeImageUrl = treeAssetsArray?.item?.imageUrl || '';
-
-  // Nếu đang loading, hiển thị loading
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-full">
@@ -58,9 +62,9 @@ function GameHome() {
       </div>
     );
   }
+
   return (
     <div className="relative w-full h-full">
-      {console.log(treeImageUrl)}
       {/* Level Image */}
       <div className="">
         <img
@@ -72,61 +76,53 @@ function GameHome() {
           LV 3
         </span>
       </div>
+      
       {/* SOL và SAO */}
       <div className="flex">
-        <div className="w-20 h-8 bg-gray-300 absolute top-14 right-28 flex items-center rounded-full">
-          <img
-            className=" w-8 h-8 z-10 bg-white px-1 py-1 rounded-full"
-            src="/assets/images/solana-icon.png"
-            alt="image-level"
-          />
-          <span className="text-black z-20 font-montserrat font-bold text-center w-12 text-[12px] rounded-xl">
-            0
-          </span>
-        </div>
-        <div className="w-20 h-8 bg-gray-300 absolute top-14 right-5 flex items-center rounded-full">
-          <img
-            className=" w-8 h-8 z-10 bg-white px-1 py-1 rounded-full"
-            src="/assets/images/solana-icon.png"
-            alt="image-level"
-          />
-          <span className="text-black z-20 font-montserrat font-bold text-center w-12 text-[12px] rounded-xl">
-            0
-          </span>
-        </div>
+        {[1, 2].map((_, index) => (
+          <div 
+            key={index} 
+            className="w-20 h-8 bg-gray-300 absolute top-14 right-28 flex items-center rounded-full"
+            style={{ right: index === 0 ? 112 : 20 }}
+          >
+            <img
+              className="w-8 h-8 z-10 bg-white px-1 py-1 rounded-full"
+              src="/assets/images/solana-icon.png"
+              alt="currency-icon"
+            />
+            <span className="text-black z-20 font-montserrat font-bold text-center w-12 text-[12px] rounded-xl">
+              0
+            </span>
+          </div>
+        ))}
       </div>
+      
       {/* Tree Image */}
       <div className="absolute top-2/4 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full max-w-[400px] flex items-center justify-center">
         <img
-          src={treeImageUrl}
+          src={treeAsset?.item?.imageUrl || ''}
           alt="tree-image"
           className="max-w-full h-auto object-contain"
         />
       </div>
+      
       {/* Basket Button */}
       <div className="relative">
         <button
           onClick={handleBasketClick}
-          className={`absolute top-28 right-4 w-12 h-12 flex items-center justify-center 
-          transform transition-transform duration-200 
-         `}
+          className="absolute top-28 right-4 w-12 h-12 flex items-center justify-center transform transition-transform duration-200"
         >
-          <div className="absolute w-full h-full">
-            <img
-              src="/assets/images/Ellipse-42.png"
-              alt="basket-background"
-              className="w-full h-full object-cover"
-            />
-          </div>
-          <div className="absolute w-8 h-8 z-10">
-            <img
-              src="/assets/images/icons8-basket-48 1.png"
-              alt="basket-icon"
-              className="w-full h-full object-contain"
-            />
-          </div>
+          <img
+            src="/assets/images/Ellipse-42.png"
+            alt="basket-background"
+            className="absolute w-full h-full object-cover"
+          />
+          <img
+            src="/assets/images/icons8-basket-48 1.png"
+            alt="basket-icon"
+            className="absolute w-8 h-8 z-10 object-contain"
+          />
         </button>
-        {/* ItemShopModal */}
       </div>
 
       {/* Shovel Button */}
@@ -137,22 +133,19 @@ function GameHome() {
           transform transition-transform duration-200 
           ${shovelClicked ? "scale-90" : "scale-100"}`}
         >
-          <div className="absolute w-full h-full">
-            <img
-              src="/assets/images/Ellipse-47.png"
-              alt="shovel-background"
-              className={`w-full h-full object-cover`}
-            />
-          </div>
-          <div className="absolute w-6 h-6 z-10">
-            <img
-              src="/assets/images/icons8-fertilizer-64 2.png"
-              alt="shovel-icon"
-              className="w-full h-full object-contain"
-            />
-          </div>
+          <img
+            src="/assets/images/Ellipse-47.png"
+            alt="shovel-background"
+            className="absolute w-full h-full object-cover"
+          />
+          <img
+            src="/assets/images/icons8-fertilizer-64 2.png"
+            alt="shovel-icon"
+            className="absolute w-6 h-6 z-10 object-contain"
+          />
         </button>
-        <div className="absolute top-48 right-[70px] ">
+        
+        <div className="absolute top-48 right-[70px]">
           <ItemShopModal
             show={shovelClicked}
             className={`absolute top-1/2 left-12 transform translate-y-full ${

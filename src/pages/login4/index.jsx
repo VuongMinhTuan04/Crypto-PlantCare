@@ -3,6 +3,7 @@ import {
   createGameItems,
   loadCollections,
   uploadToIPFS,
+  userDetailGoogle,
 } from "@/utils/authServices";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -17,10 +18,10 @@ import { Swiper, SwiperSlide } from "swiper/react";
 const trees = [
   {
     id: 1,
-    collectionId: "9a3e53b0-e3f3-4e01-8538-788d5b886c81",
-    description: "A strong and resilient tree.",
-    imageUrl: "/assets/images/image 17.png",
-    name: "Tree A",
+    collectionId: "d658c2f3-f749-48e3-a28d-d433aa868f05",
+    description: "A majestic, towering tree that symbolizes strength and longevity",
+    imageUrl: "/assets/tree-1.png",
+    name: "Green Giant Tree",
     attributes: [
       {
         traitType: "Strength",
@@ -30,10 +31,10 @@ const trees = [
   },
   {
     id: 2,
-    collectionId: "9a3e53b0-e3f3-4e01-8538-788d5b886c81",
-    description: "A fast-growing, vibrant tree.",
-    imageUrl: "/assets/images/tree-2.png",
-    name: "Tree B",
+    collectionId: "607a2ecd-d9d8-4cde-bafa-9ab55e5f5022",
+    description: "Golden Giant Tree brings prosperity and unique rewards",
+    imageUrl: "/assets/tree-3.png",
+    name: "Golden Giant Tree",
     attributes: [
       {
         traitType: "Growth",
@@ -43,10 +44,10 @@ const trees = [
   },
   {
     id: 3,
-    collectionId: "9a3e53b0-e3f3-4e01-8538-788d5b886c81",
-    description: "A tree with lush leaves and deep roots.",
-    imageUrl: "/assets/images/tree-3.png",
-    name: "Tree C",
+    collectionId: "bdbd6c61-cb21-4937-b744-671d30185651",
+    description: "Regal appearance and magical aura",
+    imageUrl: "/assets/tree-2.png",
+    name: "Purple Giant Tree",
     attributes: [
       {
         traitType: "Roots",
@@ -60,21 +61,31 @@ const Mint = () => {
   const [googleId, setGoogleId] = useState("");
   const [selectedTree, setSelectedTree] = useState(null);
   const navigate = useNavigate();
-
+  const [token, setToken] = useState("");
+  const [user, setUser] = useState([]);
   useEffect(() => {
-    const data = async () => {
-      const current = JSON.parse(localStorage.getItem("tokenGoogle"));
-      if (current === null || undefined) {
-        return;
+    // Kiểm tra và xử lý token Google
+    const tokenGoogle = localStorage.getItem("tokenGoogle");
+    if (tokenGoogle) {
+      try {
+        const parsedToken = JSON.parse(tokenGoogle);
+        setToken(parsedToken);
+        const loadUserData = async () => {
+          try {
+            const resp = await userDetailGoogle(parsedToken);
+            setUser(resp.user);
+            console.log(resp.user)
+          } catch (error) {
+            console.error("Failed to fetch user details:", error);
+          }
+        };
+        loadUserData();
+        collections()
+      } catch (error) {
+        console.error("Invalid token format:", error);
       }
-      console.log(current.user.sub);
-
-      const dataUser = current.user.sub;
-      setGoogleId(dataUser);
-    };
-    data();
-    collections();
-  });
+    }
+  }, []);
 
   const collections = async () => {
     try {
@@ -107,23 +118,17 @@ const Mint = () => {
 
       // Tạo dữ liệu gửi đến API
       const details = {
-        collectionId: "10bcd746-ac42-4076-9e45-f684d6ae7f5b",
-        description: "A fast-growing, vibrant tree.",
-        imageUrl:
-          "https://lime-calm-cobra-390.mypinata.cloud/ipfs/QmaWYgvw1c2MA3iP8HcvtHAVEtsnfUtDNUZy4bvHPyAsm8",
-        name: "EMilky Way Tree",
-        attributes: [
-          {
-            traitType: "attribute-name",
-            value: "attribute-value",
-          },
-        ],
+        collectionId: selectedTree.collectionId,
+        description: selectedTree.description,
+        imageUrl: newImageUrl,
+        name: selectedTree.name,
+        attributes: selectedTree.attributes,
       };
 
       // Gửi dữ liệu đến API createGameItems
-      const response = await createGameItems(details, googleId);
+      const response = await createGameItems(details, user.userId);
       console.log("API Response:", response);
-      
+
       alert("Tài sản đã được tạo thành công!");
     } catch (error) {
       console.error("Error:", error.message);

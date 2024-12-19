@@ -8,25 +8,22 @@ import "./custom.css";
 const LoginPage = () => {
   const navigate = useNavigate();
   const [isLoginSuccessOpen, setIsLoginSuccessOpen] = useState(false);
-  const [user, setUser] = useState([]);
 
   const handleGoogleLoginSuccess = useCallback(async (credentialResponse) => {
     // Gửi token đến backend để xác thực
     await fetch("http://localhost:3000/auth/google", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ token: credentialResponse.credential }),
+      body: JSON.stringify({ token: credentialResponse.credential }), 
     })
       .then((res) => res.json())
       .then((data) => {
-        localStorage.setItem("tokenGoogle", JSON.stringify(data));
-        setUser(data.user);
-        console.log(data.user);
-        createUserToGameShift(data.user.sub, data.user.email);
+        localStorage.setItem("tokenGoogle", JSON.stringify(data.token));
+  //      createUserToGameShift(data.user.sub, data.user.email);
       })
       .catch((err) => console.error(err));
     setIsLoginSuccessOpen(true);
-    navigate("/game-login/waitinggame");
+    navigate("/game-login/solana");
   }, []);
 
   const createUserToGameShift = async (referenceId, email) => {
@@ -42,10 +39,7 @@ const LoginPage = () => {
     }
   };
 
-  const handleCloseLoginSuccess = () => {
-    setIsLoginSuccessOpen(false);
-    // Chuyển hướng đến trang mong muốn
-  };
+
 
   const [isLoading, setIsLoading] = useState(true);
 

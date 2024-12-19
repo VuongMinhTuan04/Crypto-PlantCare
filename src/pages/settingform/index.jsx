@@ -1,21 +1,31 @@
+import { userDetailGoogle } from "@/utils/authServices";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 const SettingsPage = () => {
   const navigate = useNavigate()
   const [user, setUser] = useState([]);
-
   useEffect(() => {
-    dataUser();
-  }, []);
-
-  const dataUser = () => {
-    const currentUser = JSON.parse(localStorage.getItem("tokenGoogle"));
-    if (currentUser === null) {
-      return;
+    // Kiểm tra và xử lý token Google
+    const tokenGoogle = localStorage.getItem("tokenGoogle");
+    if (tokenGoogle) {
+      try {
+        const parsedToken = JSON.parse(tokenGoogle);
+        const loadUserData = async () => {
+          try {
+            const resp = await userDetailGoogle(parsedToken);
+            setUser(resp.user);
+            console.log(resp.user)
+          } catch (error) {
+            console.error("Failed to fetch user details:", error);
+          }
+        };
+        loadUserData();
+      } catch (error) {
+        console.error("Invalid token format:", error);
+      }
     }
-    setUser(currentUser.user);
-  };
+  }, []);
   const logout = () => {
     localStorage.removeItem('tokenGoogle')
     navigate('/game-login')

@@ -1,11 +1,13 @@
 import {
   AdjustmentsHorizontalIcon,
   ArrowDownCircleIcon,
-  ArrowRightCircleIcon,
+  CheckIcon,
+  ClipboardDocumentIcon,
 } from "@heroicons/react/24/solid";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
-import { useState } from "react";
+import { Connection, PublicKey } from "@solana/web3.js";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 function truncateMiddle(text, startLength = 15, endLength = 4) {
@@ -29,7 +31,7 @@ const Popup = ({ onClose }) => {
             className="bg-red-500 text-white px-4 py-2 rounded-full hover:bg-red-600 transition"
             onClick={() => {
               disconnect();
-              onClose()
+              onClose();
             }}
           >
             Log out
@@ -50,8 +52,35 @@ function Wallet() {
   const [activeTab, setActiveTab] = useState(1); // 1 = Account, 2 = Swap, 3 = Reward
   const navigate = useNavigate();
   const { publicKey } = useWallet();
-  const [loading, setLoading] = useState(false);
   const [showPopup, setShowPopup] = useState(false);
+  const [iconCopy, setIconCopy] = useState(false);
+  const [balance, setBalance] = useState(null);
+
+  useEffect(() => {
+    if (publicKey) {
+      const connection = new Connection(
+        "https://api.devnet.solana.com",
+        "confirmed"
+      );
+
+      // Lấy số dư SOL
+      const fetchBalance = async () => {
+        const walletPublicKey = new PublicKey(publicKey);
+        const lamports = await connection.getBalance(walletPublicKey);
+        setBalance(lamports / 1e9); // Chuyển đổi từ lamports sang SOL
+      };
+
+      fetchBalance();
+      // fetchTokens();
+    }
+  }, [publicKey]);
+
+  const handleCopy = (text) => {
+    navigator.clipboard.writeText(text).then(() => {
+      setIconCopy(true);
+      setTimeout(() => setIconCopy(false), 2000);
+    });
+  };
 
   return (
     <div className="relative w-full h-full bg-background-green py-14 px-8">
@@ -112,35 +141,47 @@ function Wallet() {
                   <p className="truncate text-black text-sm">
                     {truncateMiddle(String(publicKey))}
                   </p>
-                  <button className="ml-2 text-gray-500 hover:text-green-500">
-                    📋
+                  <button
+                    onClick={() => handleCopy(publicKey)}
+                    className="ml-2 text-gray-500 hover:text-green-500 flex items-center"
+                    title="Copy to clipboard"
+                  >
+                    {iconCopy ? (
+                      <CheckIcon className="h-5 w-5 text-green-500"/>
+                    ) : (
+                      <ClipboardDocumentIcon className="h-5 w-5" />
+                    )}
                   </button>
                 </div>
               </div>
 
               <div className="">
                 <div className="flex justify-between items-center bg-white px-4 py-2 rounded-t-xl border-b-2 border-orange-600">
-                  <span className="flex items-center space-x-2">
-                    <img
-                      src="/assets/images/Rectangle-10.png"
-                      alt=""
-                      className="size-5"
-                    />
+                  <span className="flex space-x-2 w-full relative text-sm font-medium">
+                    <span className="text-black flex absolute right-0">
+                      <img
+                        src="/assets/images/tree-coin.png"
+                        alt=""
+                        className="size-5 mr-1"
+                      />
+                      PTC
+                    </span>
                     <span className="text-black text-sm font-medium">
-                      0.000005 PTS
+                      0.000005
                     </span>
                   </span>
                 </div>
                 <div className="flex justify-between items-center bg-white px-4 py-2 rounded-b-xl ">
-                  <span className="flex items-center space-x-2">
-                    <img
-                      src="/assets/images/Rectangle-9.png"
-                      alt=""
-                      className="size-5"
-                    />
-                    <span className="text-black text-sm font-medium">
-                      0.00005 SOL
+                  <span className="flex w-full relative space-x-2 text-sm font-medium">
+                    <span className="text-black flex absolute right-0">
+                      <img
+                        src="/assets/images/solana-icon.png"
+                        alt=""
+                        className="size-5 mr-1"
+                      />
+                      SOL
                     </span>
+                    <span className="text-black">{balance}</span>
                   </span>
                 </div>
               </div>
@@ -162,46 +203,55 @@ function Wallet() {
                 <div className="flex items-center space-x-2">
                   <div className="my-6 border-t border-dashed border-black"></div>
                   <img
-                    src="/assets/images/Rectangle-10.png"
+                    src="/assets/images/solana-icon.png"
                     alt=""
-                    className="size-6"
+                    className="size-8"
                   />
                   <div>
                     <p className="text-gray-500 text-sm">Balance</p>
-                    <p className="text-black font-bold">6.32492421 PTS</p>
+                    <p className="text-black font-bold">6.32492421 SOL</p>
                   </div>
                 </div>
               </div>
 
-              <div className="my-6 border-t border-dashed border-black"></div>
+              <div className="my-6 border-t border-dashed border-green-600"></div>
               <div className="grid grid-cols-1 items-center gap-1">
-                <div className="bg-white px-4 py-2 rounded-xl border border-gray-200 flex flex-col items-center">
-                  <p className="text-gray-500 text-[12px]">Burn pet score:</p>
-
-                  <p className="text-black font-bold flex">
-                    {" "}
-                    <img
-                      src="/assets/images/Rectangle-10.png"
-                      alt=""
-                      className="size-6 mr-2"
-                    />{" "}
-                    0.0 PTS
+                <div className="px-2 rounded-md flex flex-col">
+                  <p className="text-gray-500 text-[12px] text-start">
+                    You Pay:{" "}
                   </p>
+                  <div className="flex items-center w-full justify-center relative">
+                    <input
+                      placeholder="50.0"
+                      className="w-full bg-transparent text-start text-black font-bold border-b-2 px-2 py-1 focus:outline-none focus:ring-0"
+                    />
+                    <span className="text-black flex absolute right-1">
+                      <img
+                        src="/assets/images/solana-icon.png"
+                        alt=""
+                        className="size-6"
+                      />
+                      SOL
+                    </span>
+                  </div>
                 </div>
+
                 <div className="flex items-center justify-center text-gray-400 text-2xl">
                   <ArrowDownCircleIcon className="size-8 text-white my-3" />
                 </div>
-                <div className="bg-white px-4 py-3 rounded-md border border-gray-200 flex flex-col items-center">
-                  <p className="text-gray-500 text-[12px]">Receive:</p>
-                  <p className="text-black font-bold flex">
-                    {" "}
-                    <img
-                      src="/assets/images/Rectangle-9.png"
-                      alt=""
-                      className="size-6 mr-2"
-                    />{" "}
-                    0.0 SOL
-                  </p>
+                <div className="bg-white px-4 py-1 rounded-full  border border-gray-200 flex flex-col">
+                  <p className="text-gray-500 text-[12px]">Burn pet score:</p>
+                  <div className="flex relative">
+                    <p className="text-black font-bold flex">500.0</p>
+                    <span className="text-black flex absolute right-0 bottom-2">
+                      <img
+                        src="/assets/images/tree-coin.png"
+                        alt=""
+                        className="size-6"
+                      />
+                      PTC
+                    </span>
+                  </div>
                 </div>
               </div>
               <div className="pt-5">
@@ -218,49 +268,58 @@ function Wallet() {
                 <div className="flex items-center space-x-2">
                   <div className="my-6 border-t border-dashed border-black"></div>
                   <img
-                    src="/assets/images/Rectangle-10.png"
+                    src="/assets/images/tree-coin.png"
                     alt=""
-                    className="size-6"
+                    className="size-8"
                   />
                   <div>
                     <p className="text-gray-500 text-sm">Balance</p>
-                    <p className="text-black font-bold">6.32492421 PTS</p>
+                    <p className="text-black font-bold">6.32492421 PTC</p>
                   </div>
                 </div>
               </div>
 
-              <div className="my-6 border-t border-dashed border-orange-600"></div>
-              <div className="flex justify-between items-center gap-1">
-                <div className="bg-white px-4 py-2 rounded-xl border border-gray-200 flex flex-col items-center">
-                  <p className="text-gray-500 text-[12px]">Burn pet score:</p>
+              <div className="my-6 border-t border-dashed border-green-600"></div>
+              <div className="grid grid-cols-1 items-center gap-1">
+                <div className="px-2 rounded-md flex flex-col">
+                  <p className="text-gray-500 text-[12px] text-start">
+                    Burn pet score:{" "}
+                  </p>
+                  <div className="flex items-center w-full justify-center relative">
+                    <input
+                      placeholder="50.0"
+                      className="w-full bg-transparent text-start text-black font-bold border-b-2 px-2 py-1 focus:outline-none focus:ring-0"
+                    />
+                    <span className="text-black flex absolute right-1">
+                      <img
+                        src="/assets/images/tree-coin.png"
+                        alt=""
+                        className="size-6"
+                      />
+                      PTC
+                    </span>
+                  </div>
+                </div>
 
-                  <p className="text-black font-bold flex">
-                    {" "}
-                    <img
-                      src="/assets/images/Rectangle-10.png"
-                      alt=""
-                      className="size-6 mr-2"
-                    />{" "}
-                    0.0 PTS
-                  </p>
-                </div>
                 <div className="flex items-center justify-center text-gray-400 text-2xl">
-                  <ArrowRightCircleIcon className="size-8 text-white my-3" />
+                  <ArrowDownCircleIcon className="size-8 text-white my-3" />
                 </div>
-                <div className="bg-white px-4 py-3 rounded-md border border-gray-200 flex flex-col items-center">
-                  <p className="text-gray-500 text-[12px]">Receive:</p>
-                  <p className="text-black font-bold flex">
-                    {" "}
-                    <img
-                      src="/assets/images/Rectangle-9.png"
-                      alt=""
-                      className="size-6 mr-2"
-                    />{" "}
-                    0.0 SOL
-                  </p>
+                <div className="bg-white px-4 py-1 rounded-full  border border-gray-200 flex flex-col">
+                  <p className="text-gray-500 text-[12px]">You receicve:</p>
+                  <div className="flex relative">
+                    <p className="text-black font-bold flex">500.0</p>
+                    <span className="text-black flex absolute right-0 bottom-2">
+                      <img
+                        src="/assets/images/solana-icon.png"
+                        alt=""
+                        className="size-6"
+                      />
+                      SOL
+                    </span>
+                  </div>
                 </div>
               </div>
-              <div className="pt-4">
+              <div className="pt-5">
                 <button className="w-full bg-gray-300 text-gray-500 font-bold text-sm py-3 rounded-full cursor-not-allowed">
                   CLAIM REWARDS
                 </button>

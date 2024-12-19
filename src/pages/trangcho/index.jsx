@@ -1,67 +1,117 @@
 import Loading from "@/components/loading";
 import TransitionWrapper from "@/components/motion";
-import { userDetail } from "@/utils/authServices";
+import { userDetail, userDetailGoogle } from "@/utils/authServices";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 const GameWaitingPage = () => {
   const navigate = useNavigate();
-  const [userEmail, setUserEmail] = useState("");
+  const [token, setToken] = useState("");
   const [userImage, setUserImage] = useState("/api/placeholder/200/200");
   const [NFTs, setNFTs] = useState([]);
-  const [user, setUser] = useState([]);
+  const [user, setUser] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
 
+  // Fetch user details from Google
   useEffect(() => {
-    dataUser();
-    // UserNFTs();
+    const fetchGoogleUserDetails = async () => {
+      try {
+        const tokenGoogle = localStorage.getItem("tokenGoogle");
+        if (tokenGoogle) {
+          const parsedToken = JSON.parse(tokenGoogle);
+          setToken(parsedToken);
+
+          const resp = await userDetailGoogle(parsedToken);
+          setUser(resp.user);
+        }
+      } catch (error) {
+        console.error("Failed to fetch user details:", error);
+        // Xử lý lỗi, ví dụ chuyển hướng đến trang đăng nhập
+        navigate("/game-login");
+      }
+    };
+
+    fetchGoogleUserDetails();
+  }, [navigate]);
+
+  // Fetch user NFTs when user is available
+  useEffect(() => {
+    const fetchUserNFTs = async () => {
+      if (user?.userId) {
+        try {
+          setIsLoading(true);
+          const resp = await userDetail(user.userId);
+          console.log(resp);
+          setNFTs(resp.data || []);
+        } catch (error) {
+          console.error("Failed to fetch user NFTs:", error);
+          // Xử lý lỗi, có thể hiển thị thông báo cho người dùng
+          setNFTs([]);
+        } finally {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    fetchUserNFTs();
+  }, [user]);
+
+  // Loading state management
+  useEffect(() => {
+    const loadingTimer = setTimeout(() => {
+      setIsLoading(false);
+    }, 5000);
+
+    return () => clearTimeout(loadingTimer);
   }, []);
 
-  const dataUser = async () => {
-    const currentUser = JSON.parse(localStorage.getItem("tokenGoogle"));
-    if (currentUser === null) {
-      return;
-    }
-    console.log(currentUser.user);
-    setUser(currentUser.user);
-    try {
-      const resp = await userDetail(currentUser.user.sub);
-      setNFTs(resp.data);
-      console.log(resp.data);
-    } catch (error) {
-      console.log(error);
-    }
-  };
-
+  // Logout handler
   const handleLogout = () => {
     localStorage.removeItem("tokenGoogle");
     navigate("/game-login");
   };
 
   const handleEnterGame = () => {
-    if (NFTs.some((nft) => nft.type === "UniqueAsset")) {
-      navigate("/game-playing");  
+    const uniqueAssets = NFTs.filter((nft) => nft.type === "UniqueAsset").map((nft) => nft.item);
+  
+    const assetsTrees = uniqueAssets.filter((item) =>
+      ["Green Giant Tree", "Golden Giant Tree", "Purple Giant Tree"].includes(item.name)
+    );
+  
+    if (assetsTrees.length > 0) {
+      console.log(assetsTrees);
+      navigate("/game-playing");
     } else {
-      navigate("/game-login/solana/deposite/mint"); 
+      console.log("No matching assets found.");
+      navigate("/game-login/solana/deposite/mint");
     }
   };
-  const [isLoading, setIsLoading] = useState(true);
+  
+  
 
-  useEffect(() => {
-    // Giả lập quá trình tải
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 5000); // 5 giây
-
-    return () => clearTimeout(timer);
-  }, []);
-
+  // Rendering loading state
   if (isLoading) {
     return <Loading />;
   }
 
+  // Xử lý trường hợp không có user
+  if (!user) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <p>Vui lòng đăng nhập lại</p>
+        <button
+          onClick={() => navigate("/game-login")}
+          className="ml-2 bg-blue-500 text-white px-4 py-2 rounded"
+        >
+          Đăng Nhập
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="relative h-full w-full overflow-hidden font-montserrat">
-      {/* Video Background */}
+      {/* Video Background - giữ nguyên như cũ */}
       <video
         autoPlay
         loop
@@ -73,12 +123,12 @@ const GameWaitingPage = () => {
 
       {/* Overlay */}
       <div className="absolute inset-0 bg-black/10 z-10"></div>
+
       <TransitionWrapper>
-        {/* Content Container */}
         <div className="relative z-20 flex flex-col items-center justify-center h-full text-white px-4">
           {/* User Image */}
           <img
-            src={user.picture}
+            src={user.picture || "/api/placeholder/200/200"}
             alt="User Profile"
             className="w-32 h-32 rounded-full object-cover mb-4 border-4 border-white shadow-lg"
           />

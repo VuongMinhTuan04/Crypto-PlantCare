@@ -2,11 +2,11 @@ import axios from "axios";
 
 const API_KEY = import.meta.env.VITE_GAMESHIFT_API_KEY;
 // Tạo NFTs
-export const createUser = async (referenceId, email) => {
+export const createUser = async (referenceId, email, externalWalletAddress) => {
   try {
     const response = await axios.post(
       "https://api.gameshift.dev/nx/users",
-      { referenceId, email },
+      { referenceId, email, externalWalletAddress },
       {
         headers: {
           accept: "application/json",
@@ -20,6 +20,24 @@ export const createUser = async (referenceId, email) => {
     return error;
   }
 };
+export const userDetailGoogle = async (token) => {
+  try {
+    const response = await axios.get("http://localhost:3000/user/detail", {
+      headers: {
+        Accept: "application/json", 
+        Authorization: `Bearer ${token}`, 
+        "Content-Type": "application/json", 
+      },
+    });
+    return response.data; 
+  } catch (error) {
+    console.error("Error fetching user details:", error.message);
+    return {
+      error: true,
+      message: error.response?.data || "Unknown error occurred",
+    }; 
+  }
+};
 
 export const userDetail = async (userId) => {
   try {
@@ -28,14 +46,16 @@ export const userDetail = async (userId) => {
       {
         headers: {
           accept: "application/json",
-          "x-api-key":
-            "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJrZXkiOiIyNzU1YTIyYy0wZDVhLTQyMjQtODdjNC03Zjk0N2JiNWZmZGUiLCJzdWIiOiI0ZjcwNTFhMi1mNjI3LTRmMTEtYmYyZC0wNzM0YjBlYmNhYTEiLCJpYXQiOjE3MzM3NjAzMTF9.j5lD9TPLsFpTGkS5Qhv5WJNn4TPNDsEiFsu3kEl2hLE",
+          "x-api-key": API_KEY
         },
       }
     );
     return response.data;
   } catch (error) {
-    return error
+    return {
+      error: true,
+      message: error.response?.data || "Unknown error occurred",
+    }; 
   }
 };
 // Đăng ảnh lên Pinata
@@ -72,7 +92,7 @@ export const createGameItems = async (details, destinationUserReferenceId) => {
         },
       }
     );
-    console.log(response);
+   return response.data
   } catch (error) {
     console.log(error);
   }
@@ -82,9 +102,10 @@ export const loadCollections = async () => {
     const response = await axios.get(`https://api.gameshift.dev/nx/items`, {
       headers: {
         accept: "application/json",
-        "x-api-key": API_KEY, // Thay YOUR_API_KEY bằng API Key của bạn
+        "x-api-key": API_KEY, // Thay YOUR_API_KEY bằng API Key của bạn 
       },
     });
+    return response.data
   } catch (error) {
     console.error(
       "Error creating asset:",

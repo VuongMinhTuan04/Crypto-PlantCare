@@ -34,62 +34,7 @@ const ItemShopModal = ({ show, onClose }) => {
       backgroundImage: "/assets/images/Ellipse-50.png",
       icon: "/assets/images/icons8-fertilizer-64 (2) 1.png",
     },
-    {
-      id: 5,
-      image: "/assets/images/potion.png",
-      name: "Healing Potion",
-      backgroundImage: "/assets/images/Ellipse-50.png",
-      icon: "/assets/images/icons8-fertilizer-64 (3) 1.png",
-    },
-    {
-      id: 6,
-      image: "/assets/images/shield.png",
-      name: "Protective Shield",
-      backgroundImage: "/assets/images/Ellipse-50.png",
-      icon: "/assets/images/icons8-fertilizer-64 (4) 1.png",
-    },
-    {
-      id: 7,
-      image: "/assets/images/coin-bag.png",
-      name: "Gold Bag",
-      backgroundImage: "/assets/images/Ellipse-50.png",
-      icon: "/assets/images/icons8-fertilizer-32 1.png",
-    },
-    {
-      id: 8,
-      image: "/assets/images/tree.png",
-      name: "Sapling",
-      backgroundImage: "/assets/images/Ellipse-50.png",
-      icon: "/assets/images/icons8-fertilizer-64 2.png",
-    },
-    {
-      id: 9,
-      image: "/assets/images/tree.png",
-      name: "Sapling",
-      backgroundImage: "/assets/images/Ellipse-50.png",
-      icon: "/assets/images/icons8-fertilizer-55 1.png",
-    },
-    {
-      id: 10,
-      image: "/assets/images/tree.png",
-      name: "Sapling",
-      backgroundImage: "/assets/images/Ellipse-50.png",
-      icon: "/assets/images/icons8-ground-48 1.png",
-    },
-    {
-      id: 11,
-      image: "/assets/images/tree.png",
-      name: "Sapling",
-      backgroundImage: "/assets/images/Ellipse-50.png",
-      icon: "/assets/images/image 12.png",
-    },
-    {
-      id: 12,
-      image: "/assets/images/tree.png",
-      name: "Sapling",
-      backgroundImage: "/assets/images/Ellipse-50.png",
-      icon: "/assets/images/image 13.png",
-    },
+
   ];
 
   const handleItemClick = (item) => {
@@ -106,7 +51,7 @@ const ItemShopModal = ({ show, onClose }) => {
   return (
     <div className={`inset-0 flex ${show ? "block" : "hidden"}`}>
       {showNotification && <Notification />}
-      <div className="bg-green-400 border-2 border-black rounded-lg shadow-lg p-1 w-full max-w-[250px] text-black">
+      <div className="bg-green-400 rounded-lg shadow-lg p-1 w-full max-w-[250px] text-black">
         <div className="grid grid-cols-4">
           {itemData.map((item) => (
             <button

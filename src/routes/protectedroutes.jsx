@@ -20,18 +20,13 @@ const ProtectedRoute = ({ children }) => {
       const tokenParsed = JSON.parse(tokenLuuTru);
       
       // Kiểm tra cấu trúc token (điều chỉnh theo cấu trúc của bạn)
-      if (!tokenParsed || !tokenParsed.token) {
+      if (!tokenParsed || !tokenParsed) {
         console.warn("Cấu trúc token không hợp lệ");
         return false;
       }
 
       // Kiểm tra thời hạn token (nếu có)
-      const thoiGianHetHan = tokenParsed.expiry;
-      if (thoiGianHetHan && Date.now() > thoiGianHetHan) {
-        console.warn("Token đã hết hạn");
-        localStorage.removeItem("tokenGoogle");
-        return false;
-      }
+
 
       return true;
     } catch (error) {
