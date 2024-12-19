@@ -1,21 +1,24 @@
 import { userDetailGoogle } from "@/utils/authServices";
+import { jwtDecode } from "jwt-decode";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 const SettingsPage = () => {
-  const navigate = useNavigate()
+  const navigate = useNavigate();
   const [user, setUser] = useState([]);
+  const [token, setToken] = useState('')
   useEffect(() => {
     // Kiểm tra và xử lý token Google
     const tokenGoogle = localStorage.getItem("tokenGoogle");
     if (tokenGoogle) {
       try {
         const parsedToken = JSON.parse(tokenGoogle);
+        setToken(parsedToken)
         const loadUserData = async () => {
           try {
             const resp = await userDetailGoogle(parsedToken);
             setUser(resp.user);
-            console.log(resp.user)
+            console.log(resp.user);
           } catch (error) {
             console.error("Failed to fetch user details:", error);
           }
@@ -27,9 +30,32 @@ const SettingsPage = () => {
     }
   }, []);
   const logout = () => {
-    localStorage.removeItem('tokenGoogle')
-    navigate('/game-login')
-  }
+    localStorage.removeItem("tokenGoogle");
+    navigate("/game-login");
+  };
+
+  const checkTokenExpiration = (token) => {
+    try {
+      const decodedToken = jwtDecode(token);
+      console.log(decodedToken)
+      const expirationTime = decodedToken.exp * 1000; // Convert to milliseconds
+
+      // Lấy thời gian hiện tại
+      const currentTime = Date.now();
+
+      // Kiểm tra nếu token đã hết hạn
+      if (currentTime > expirationTime) {
+        return "Token has expired.";
+      } else {
+        return "Token is valid.";
+      }
+    } catch (error) {
+      console.error("Invalid token:", error);
+      return "Invalid token.";
+    }
+  };
+
+
   return (
     <div className="bg-background-green h-full w-full">
       {console.log(user)}
@@ -56,7 +82,6 @@ const SettingsPage = () => {
                   {user?.email || "user@example.com"}
                 </p>
               </div>
-          
             </div>
           </div>
           <div className="flex items-center justify-between mb-4 border-b border-gray-300 pb-4">
@@ -78,8 +103,17 @@ const SettingsPage = () => {
             <button className="bg-orange-500 font-bold text-white px-4 py-2 rounded-full w-full">
               FAQ
             </button>
-            <button onClick={logout} className="bg-gray-500 font-bold text-white px-4 py-2 rounded-full w-full">
+            <button
+              onClick={logout}
+              className="bg-gray-500 font-bold text-white px-4 py-2 rounded-full w-full"
+            >
               LOG OUT
+            </button>
+            <button
+              onClick={() => checkTokenExpiration(token)}
+              className="bg-gray-500 font-bold text-white px-4 py-2 rounded-full w-full"
+            >
+              CHECKTOKEN
             </button>
           </div>
         </div>

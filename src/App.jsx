@@ -6,6 +6,9 @@ import ProtectedRoute from "./routes/protectedroutes";
 import { privateRoutes, publicRoutes } from "./routes/routes";
 
 const App = () => {
+
+
+  
   return (
     <Router>
       <div className="App">

@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",
+    "@jup-ag/core": "^4.0.0-beta.21",
     "@react-oauth/google": "^0.12.1",
     "@solana/wallet-adapter-base": "^0.9.23",
     "@solana/wallet-adapter-react": "^0.15.35",
@@ -21,6 +22,7 @@
     "buffer": "^6.0.3",
     "framer-motion": "^11.13.5",
     "frontend": "file:",
+    "jwt-decode": "^4.0.0",
     "lucide-react": "^0.468.0",
     "phaser": "^3.87.0",
     "react": "^18.3.1",
