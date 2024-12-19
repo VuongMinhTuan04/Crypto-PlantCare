@@ -21,6 +21,7 @@ const FoundWallet = () => {
         const loadUserData = async () => {
           try {
             const resp = await userDetailGoogle(parsedToken);
+            console.log(resp);
             setUser(resp.user);
           } catch (error) {
             console.error("Failed to fetch user details:", error);
@@ -109,11 +110,22 @@ const FoundWallet = () => {
         navigate("/game-login/waitinggame");
       } else {
         const resp = await createUser(user.userId, user.email, publicKey);
-        if (resp.success) {
+        console.log(resp);
+        if (resp.status === 201) {
           alert("Đăng ký thành công");
+          navigate("/game-login/waitinggame");
         } else {
-          if(resp.response?.data.message === "A user with that wallet address already exists") {
-            alert("Ví này đã được sử dụng")
+          if (
+            resp.response?.data.message ===
+            "A user with that email already exists in this project environment"
+          ) {
+            alert("Tài khoản này đã đăng ký");
+          }
+          if (
+            resp.response?.data.message ===
+            "A user with that wallet address already exists"
+          ) {
+            alert("Ví này đã được sử dụng");
           }
         }
       }
