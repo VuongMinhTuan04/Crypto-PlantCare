@@ -1,4 +1,5 @@
 import ItemShopModal from "@/components/gameComponents/buynfts";
+import CountdownToHarvest from "@/components/growthTimer";
 import { userDetail, userDetailGoogle } from "@/utils/authServices";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -10,6 +11,7 @@ function GameHome() {
   const [isLoading, setIsLoading] = useState(true);
   const [user, setUser] = useState(null);
   const [treeAsset, setTreeAsset] = useState(null);
+  const [isFruitReady, setIsFruitReady] = useState(false);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -63,6 +65,12 @@ function GameHome() {
     );
   }
 
+  const handleComplete = () => {
+    setIsFruitReady(true);
+  };
+  const handleHarvestComplete = () => {
+    alert("Cây đã ra quả! Đã đến lúc thu hoạch.");
+  };
   return (
     <div className="relative w-full h-full">
       {/* Level Image */}
@@ -97,6 +105,7 @@ function GameHome() {
         ))}
       </div>
       
+      
       {/* Tree Image */}
       <div className="absolute top-2/4 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full max-w-[400px] flex items-center justify-center">
         <img
@@ -105,7 +114,8 @@ function GameHome() {
           className="max-w-full h-auto object-contain"
         />
       </div>
-      
+     
+      <CountdownToHarvest harvestDurationHours={5} onComplete={handleHarvestComplete} />
       {/* Basket Button */}
       <div className="relative">
         <button

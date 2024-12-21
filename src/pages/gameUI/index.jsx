@@ -66,8 +66,8 @@ function GameScreen() {
     }
   };
   return (
-    <div className="w-[375px] h-[660px] rounded-2xl bg-gray-100 shadow-lg overflow-hidden flex items-center justify-center relative">
-      <div className="w-full h-full bg-background-game bg-contain bg-center bg-no-repeat flex flex-col items-center justify-center">
+    <div className="w-full h-full bg-gray-100 shadow-lg overflow-hidden flex items-center justify-center relative">
+      <div className="w-full h-full bg-background-game bg-cover bg-center bg-no-repeat flex flex-col items-center justify-center">
         {renderScreen()}
       </div>
       {/* Event Options List */}

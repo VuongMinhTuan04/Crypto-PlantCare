@@ -4,7 +4,7 @@ const VideoBackground = ({ children }) => {
     <div className="relative w-full h-screen overflow-hidden">
       {/* Background Video */}
       <video
-        className="absolute top-0 left-0 w-full h-full object-cover"
+        className="absolute top-0 left-0 w-full h-full object-cover hidden sm:block "
         src="/assets/videos/backgroundvideo.mp4"
         autoPlay
         loop

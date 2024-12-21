@@ -1,5 +1,4 @@
 import Loading from "@/components/loading";
-import { GameRewardPopup } from "@/components/popupThongbao";
 import { createUser } from "@/utils/authServices";
 import { GoogleLogin, GoogleOAuthProvider } from "@react-oauth/google";
 import "@solana/wallet-adapter-react-ui/styles.css";
@@ -83,7 +82,7 @@ const LoginPage = () => {
               }}
             />
           </GoogleOAuthProvider>
-          <div className="p-4">
+          {/* <div className="p-4">
           <button
             onClick={() => setIsOpen(true)}
             className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded"
@@ -92,7 +91,7 @@ const LoginPage = () => {
           </button>
 
           <GameRewardPopup isOpen={isOpen} onClose={() => setIsOpen(false)} />
-        </div>
+        </div> */}
         </div>
         
       </div>
