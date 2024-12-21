@@ -130,6 +130,7 @@ const Mint = () => {
       console.log("API Response:", response);
 
       alert("Tài sản đã được tạo thành công!");
+      navigate('/game-login/solana/deposite/mint')
     } catch (error) {
       console.error("Error:", error.message);
       alert("Có lỗi xảy ra khi tạo tài sản!");

@@ -24,18 +24,18 @@ export const userDetailGoogle = async (token) => {
   try {
     const response = await axios.get("http://localhost:3000/user/detail", {
       headers: {
-        Accept: "application/json", 
-        Authorization: `Bearer ${token}`, 
-        "Content-Type": "application/json", 
+        Accept: "application/json",
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
       },
     });
-    return response.data; 
+    return response.data;
   } catch (error) {
     console.error("Error fetching user details:", error.message);
     return {
       error: true,
       message: error.response?.data || "Unknown error occurred",
-    }; 
+    };
   }
 };
 
@@ -46,7 +46,7 @@ export const userDetail = async (userId) => {
       {
         headers: {
           accept: "application/json",
-          "x-api-key": API_KEY
+          "x-api-key": API_KEY,
         },
       }
     );
@@ -55,7 +55,7 @@ export const userDetail = async (userId) => {
     return {
       error: true,
       message: error.response?.data || "Unknown error occurred",
-    }; 
+    };
   }
 };
 // Đăng ảnh lên Pinata
@@ -92,7 +92,7 @@ export const createGameItems = async (details, destinationUserReferenceId) => {
         },
       }
     );
-   return response.data
+    return response.data;
   } catch (error) {
     console.log(error);
   }
@@ -102,10 +102,30 @@ export const loadCollections = async () => {
     const response = await axios.get(`https://api.gameshift.dev/nx/items`, {
       headers: {
         accept: "application/json",
-        "x-api-key": API_KEY, // Thay YOUR_API_KEY bằng API Key của bạn 
+        "x-api-key": API_KEY, // Thay YOUR_API_KEY bằng API Key của bạn
       },
     });
-    return response.data
+    return response.data;
+  } catch (error) {
+    console.error(
+      "Error creating asset:",
+      error.response?.data || error.message
+    );
+  }
+};
+export const changeSOLToUSDC = async (userId, quantity, destinationWallet) => {
+  try {
+    const response = await axios.get(
+      `https://api.gameshift.dev/nx/users/${userId}/items/USDC/transfer`,
+      { quantity, destinationWallet },
+      {
+        headers: {
+          accept: "application/json",
+          "x-api-key": API_KEY,
+        },
+      }
+    );
+    return response.data;
   } catch (error) {
     console.error(
       "Error creating asset:",

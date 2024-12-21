@@ -9,8 +9,13 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+<<<<<<< HEAD
     "@solana/web3.js": "^1.98.0",
     "api": "file:",
+=======
+    "@jup-ag/core": "^4.0.0-beta.21",
+    "@solana/web3.js": "^1.98.0",
+>>>>>>> 4e9e3ef3712066671ffbf116560b004f1c66ebbf
     "body-parser": "^1.20.3",
     "bs58": "^6.0.0",
     "cors": "^2.8.5",

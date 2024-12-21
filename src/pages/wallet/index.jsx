@@ -1,3 +1,4 @@
+import { userDetail, userDetailGoogle } from "@/utils/authServices";
 import {
   AdjustmentsHorizontalIcon,
   ArrowDownCircleIcon,
@@ -82,6 +83,51 @@ function Wallet() {
     });
   };
 
+  const [user, setUser] = useState([]);
+  useEffect(() => {
+    // Kiểm tra và xử lý token Google
+    const tokenGoogle = localStorage.getItem("tokenGoogle");
+    if (tokenGoogle) {
+      try {
+        const parsedToken = JSON.parse(tokenGoogle);
+        const loadUserData = async () => {
+          try {
+            const resp = await userDetailGoogle(parsedToken);
+            setUser(resp.user);
+            console.log(resp.user);
+          } catch (error) {
+            console.error("Failed to fetch user details:", error);
+          }
+        };
+        loadUserData();
+      } catch (error) {
+        console.error("Invalid token format:", error);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!user) {
+      return;
+    }
+    const fetchUserSOLDetails = async () => {
+      try {
+        const resp = await userDetail(user.userId);
+        if (resp.message?.message === "User not found") {
+          return;
+        }
+        console.log(resp);
+      } catch (error) {
+        console.log("Failed to fetch user SOL details:", error);
+      }
+    };
+
+    fetchUserSOLDetails();
+  }, [user]);
+
+
+
+
   return (
     <div className="relative w-full h-full bg-background-green py-14 px-8">
       {showPopup && <Popup onClose={() => setShowPopup(false)} />}
@@ -147,7 +193,7 @@ function Wallet() {
                     title="Copy to clipboard"
                   >
                     {iconCopy ? (
-                      <CheckIcon className="h-5 w-5 text-green-500"/>
+                      <CheckIcon className="h-5 w-5 text-green-500" />
                     ) : (
                       <ClipboardDocumentIcon className="h-5 w-5" />
                     )}

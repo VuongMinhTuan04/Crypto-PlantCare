@@ -27,13 +27,7 @@ const ItemShopModal = ({ show, onClose }) => {
       backgroundImage: "/assets/images/Ellipse-50.png",
       icon: "/assets/images/icons8-fertilizer-64 (1) 1.png",
     },
-    {
-      id: 4,
-      image: "/assets/images/heart.png",
-      name: "Health Pack",
-      backgroundImage: "/assets/images/Ellipse-50.png",
-      icon: "/assets/images/icons8-fertilizer-64 (2) 1.png",
-    },
+
 
   ];
 
@@ -51,8 +45,8 @@ const ItemShopModal = ({ show, onClose }) => {
   return (
     <div className={`inset-0 flex ${show ? "block" : "hidden"}`}>
       {showNotification && <Notification />}
-      <div className="bg-green-400 rounded-lg shadow-lg p-1 w-full max-w-[250px] text-black">
-        <div className="grid grid-cols-4">
+      <div className="bg-green-400 rounded-lg shadow-lg p-1 w-full max-w-[200px] text-black">
+        <div className="grid grid-cols-3">
           {itemData.map((item) => (
             <button
               key={item.id}
