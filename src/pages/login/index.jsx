@@ -1,4 +1,5 @@
 import Loading from "@/components/loading";
+import { GameRewardPopup } from "@/components/popupThongbao";
 import { createUser } from "@/utils/authServices";
 import { GoogleLogin, GoogleOAuthProvider } from "@react-oauth/google";
 import "@solana/wallet-adapter-react-ui/styles.css";
@@ -7,6 +8,8 @@ import { useNavigate } from "react-router-dom";
 import "./custom.css";
 const LoginPage = () => {
   const navigate = useNavigate();
+  const [isOpen, setIsOpen] = useState(false);
+
   const [isLoginSuccessOpen, setIsLoginSuccessOpen] = useState(false);
 
   const handleGoogleLoginSuccess = useCallback(async (credentialResponse) => {
@@ -14,12 +17,12 @@ const LoginPage = () => {
     await fetch("http://localhost:3000/auth/google", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ token: credentialResponse.credential }), 
+      body: JSON.stringify({ token: credentialResponse.credential }),
     })
       .then((res) => res.json())
       .then((data) => {
         localStorage.setItem("tokenGoogle", JSON.stringify(data.token));
-  //      createUserToGameShift(data.user.sub, data.user.email);
+        //      createUserToGameShift(data.user.sub, data.user.email);
       })
       .catch((err) => console.error(err));
     setIsLoginSuccessOpen(true);
@@ -39,8 +42,6 @@ const LoginPage = () => {
     }
   };
 
-
-
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -55,6 +56,7 @@ const LoginPage = () => {
   if (isLoading) {
     return <Loading />;
   }
+
   return (
     <>
       <div className="flex items-center justify-center h-full w-full bg-background-green">
@@ -81,7 +83,18 @@ const LoginPage = () => {
               }}
             />
           </GoogleOAuthProvider>
+          <div className="p-4">
+          <button
+            onClick={() => setIsOpen(true)}
+            className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded"
+          >
+            Mở Popup
+          </button>
+
+          <GameRewardPopup isOpen={isOpen} onClose={() => setIsOpen(false)} />
         </div>
+        </div>
+        
       </div>
     </>
   );
