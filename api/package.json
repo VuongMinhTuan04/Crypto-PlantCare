@@ -8,16 +8,22 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": "",
   "dependencies": {
+<<<<<<< HEAD
+    "@solana/web3.js": "^1.98.0",
+    "api": "file:",
+=======
     "@jup-ag/core": "^4.0.0-beta.21",
     "@solana/web3.js": "^1.98.0",
+>>>>>>> 4e9e3ef3712066671ffbf116560b004f1c66ebbf
     "body-parser": "^1.20.3",
+    "bs58": "^6.0.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "google-auth-library": "^9.15.0",
     "jsonwebtoken": "^9.0.2",
-    "mongoose": "^8.8.4"
-  }
+    "mongoose": "^8.9.2"
+  },
+  "description": ""
 }

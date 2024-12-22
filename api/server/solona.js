@@ -1,10 +1,13 @@
-import bodyParser from 'body-parser';
-import cors from 'cors';
-import dotenv from 'dotenv';
 import express from 'express';
+import { Connection, PublicKey, SystemProgram, Transaction, clusterApiUrl, Keypair } from '@solana/web3.js';
+import cors from 'cors';
+import bs58 from 'bs58';
+import bodyParser from 'body-parser';
+import mongoose from 'mongoose';
+import dotenv from 'dotenv';
 import { OAuth2Client } from "google-auth-library";
 import jwt from 'jsonwebtoken';
-import mongoose from 'mongoose';
+
 dotenv.config();
 // import Chance from 'chance';
 // const chance = new Chance();
@@ -26,25 +29,7 @@ app.use(cors({
   allowedHeaders: 'Content-Type,Authorization'  // Allowed headers
 }));
 
-// Middleware xác thực token
-const authMiddleware = (req, res, next) => {
-  const authHeader = req.headers.authorization;
-
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return res.status(401).json({ message: "Unauthorized" });
-  }
-
-  const token = authHeader.split(" ")[1];
-
-  try {
-    const decoded = jwt.verify(token, CLIENT_SECRET);
-    req.user = decoded; // Lưu thông tin người dùng vào `req` để dùng trong route
-    next();
-  } catch (error) {
-    return res.status(401).json({ message: "Invalid token" });
-  }
-};
-
+// Kết nối MongoDB
 const connectDB = async () => {
   try {
     await mongoose.connect(process.env.MONGODB_URI
@@ -73,7 +58,7 @@ app.post("/auth/google", async (req, res) => {
       audience: CLIENT_ID,
     });
 
-
+    
     const payload = ticket.getPayload();
     const { sub, email, name, picture } = payload;
 
@@ -86,7 +71,7 @@ app.post("/auth/google", async (req, res) => {
 
     const user = await User.findOne({ sub: sub });
     if (!user) {
-      const newUser = new User({ sub, email, picture, name });
+      const newUser = new User({sub, email, picture, name});
       await newUser.save(newUser);
       console.log("Tao user moi thanh cong");
 
@@ -95,60 +80,20 @@ app.post("/auth/google", async (req, res) => {
     }
 
 
-
-    res.json({ token: jwtToken, user: { userId: user._id, sub, email, name, picture } });
+    res.json({ token: jwtToken, user: { sub, email, name, picture } });
   } catch (error) {
     console.error(error);
     res.status(401).send("Invalid token");
   }
 });
 
-<<<<<<< HEAD
-=======
-const authMiddleware = (req, res, next) => {
-  const authHeader = req.headers.authorization;
-
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return res.status(401).json({ message: "Unauthorized" });
-  }
-
-  const token = authHeader.split(" ")[1];
-
-  try {
-    const decoded = jwt.verify(token, CLIENT_SECRET);
-    req.user = decoded; // Lưu thông tin người dùng vào `req` để dùng trong route
-    next();
-  } catch (error) {
-    return res.status(401).json({ message: "Invalid token" });
-  }
-};
-
->>>>>>> f317e966e8ecd0ae78edffbff42a884b4d05373b
-app.get("/user/detail", authMiddleware, (req, res) => {
-  const user = req.user;
-
-  res.json({
-    message: "User detail fetched successfully",
-    user: {
-      userId: user.userId,
-      email: user.email,
-      name: user.name,
-      picture: user.picture,
-    },
-  });
-});
-
-<<<<<<< HEAD
-
-=======
->>>>>>> f317e966e8ecd0ae78edffbff42a884b4d05373b
 app.get("/test", async (req, res) => {
   console.log("Client ID:", CLIENT_ID);
   console.log("Client Secret:", CLIENT_SECRET);
 
   // Gửi phản hồi về client
   res.send({
-    message: "Check console for Client ID and Client Secret.", CLIENT_ID, CLIENT_SECRET,
+    message: "Check console for Client ID and Client Secret.",CLIENT_ID,CLIENT_SECRET,
     clientId: CLIENT_ID,
     clientSecret: CLIENT_SECRET,
   });
@@ -192,26 +137,6 @@ app.get('/users', async (req, res) => {
 //   await newItem.save();
 //   res.json(newItem);
 // });
-
-app.post('/get/user/sub', async (req, res) => {
-  const { sub } = req.body; // Lấy sub từ body
-
-  if (!sub) {
-    return res.status(400).json({ message: "Sub is required" });
-  }
-
-  try {
-    const user = await User.findOne({ sub });
-    if (user) {
-      res.json(user);
-    } else {
-      res.status(404).json({ message: "User not found" });
-    }
-  } catch (error) {
-    console.error("Error fetching user:", error);
-    res.status(500).json({ message: "Internal Server Error" });
-  }
-});
 
 
 app.delete('/users/:id', async (req, res) => {

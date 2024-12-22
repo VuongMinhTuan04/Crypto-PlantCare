@@ -19,24 +19,25 @@
     "@solana/wallet-adapter-wallets": "^0.19.32",
     "@solana/web3.js": "^1.95.8",
     "axios": "^1.7.9",
+    "body-parser": "^1.20.3",
+    "bs58": "^6.0.0",
     "buffer": "^6.0.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
     "framer-motion": "^11.13.5",
     "frontend": "file:",
+    "google-auth-library": "^9.15.0",
+    "jsonwebtoken": "^9.0.2",
     "jwt-decode": "^4.0.0",
     "lucide-react": "^0.468.0",
+    "mongoose": "^8.9.2",
     "phaser": "^3.87.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^7.0.2",
     "swiper": "^11.1.15",
-    "tailwind-scrollbar": "^3.1.0",
-    "body-parser": "^1.20.3",
-    "cors": "^2.8.5",
-    "dotenv": "^16.4.7",
-    "express": "^4.21.2",
-    "google-auth-library": "^9.15.0",
-    "jsonwebtoken": "^9.0.2",
-    "mongoose": "^8.8.4"
+    "tailwind-scrollbar": "^3.1.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.15.0",
@@ -53,5 +54,10 @@
     "postcss": "^8.4.49",
     "tailwindcss": "^3.4.15",
     "vite": "^6.0.1"
-  }
+  },
+  "description": "**Crypto PlantCare** là một dự án game web3 chăm sóc cây trồng, trong đó người chơi có thể chăm sóc cây, thu hoạch quả, và nhận được NFTs cũng như token dưới dạng SOL. Mục tiêu của dự án là tạo ra một nền tảng tương tác cho người chơi trong thế giới ảo, nơi họ có thể trồng cây, chăm sóc và thu hoạch cây của mình để nhận phần thưởng dưới dạng tài sản số.",
+  "main": "eslint.config.js",
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
 }

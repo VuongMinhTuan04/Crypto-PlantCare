@@ -20,6 +20,8 @@ const LoginPage = () => {
     })
       .then((res) => res.json())
       .then((data) => {
+        console.log(data);
+        //localStorage.setItem("userId", JSON.stringify(data.user.userId));
         localStorage.setItem("tokenGoogle", JSON.stringify(data.token));
         //      createUserToGameShift(data.user.sub, data.user.email);
       })
