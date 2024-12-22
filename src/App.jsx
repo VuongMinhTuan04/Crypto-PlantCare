@@ -1,14 +1,42 @@
-import { Fragment } from "react";
-import { Route, BrowserRouter as Router, Routes } from "react-router-dom";
+import { jwtDecode } from "jwt-decode";
+import { Fragment, useEffect } from "react";
+import {
+  Navigate,
+  Route,
+  BrowserRouter as Router,
+  Routes,
+} from "react-router-dom";
 import VideoBackground from "./components/backgroundvideo";
 import LayoutWebsite from "./DefaultLayouts/LayoutWebsite";
 import ProtectedRoute from "./routes/protectedroutes";
 import { privateRoutes, publicRoutes } from "./routes/routes";
 
 const App = () => {
+  useEffect(() => {
+    checkTokenExpiration();
+    const tokenCheckInterval = setInterval(checkTokenExpiration, 60000);
+    return () => clearInterval(tokenCheckInterval);
+  }, []);
 
+  const checkTokenExpiration = () => {
+    const token = localStorage.getItem("tokenGoogle");
 
-  
+    try {
+      const parsedToken = JSON.parse(token);
+      const decodedToken = jwtDecode(parsedToken);
+      const expirationTime = decodedToken.exp * 1000;
+      const currentTime = Date.now();
+
+      if (currentTime > expirationTime) {
+        localStorage.removeItem("tokenGoogle");
+        return <Navigate to="/game-login" replace />;
+      }
+    } catch (error) {
+      localStorage.removeItem("tokenGoogle");
+      return <Navigate to="/game-login" replace />;
+    }
+  };
+
   return (
     <Router>
       <div className="App">
@@ -46,7 +74,7 @@ const App = () => {
                   <ProtectedRoute>
                     <VideoBackground>
                       <Layout>
-                          <Page />
+                        <Page />
                       </Layout>
                     </VideoBackground>
                   </ProtectedRoute>

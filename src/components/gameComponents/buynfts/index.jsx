@@ -9,23 +9,23 @@ const ItemShopModal = ({ show, onClose }) => {
     {
       id: 1,
       image: "/assets/images/water-drops.png",
-      name: "Water Drops",
+      name: "Watering Can",
       backgroundImage: "/assets/images/Ellipse-50.png",
-      icon: "/assets/images/icons8-water-100 1.png",
+      icon: "/assets/images/watering-can.png",
     },
     {
       id: 2,
       image: "/assets/images/box.png",
       name: "Supply Box",
       backgroundImage: "/assets/images/Ellipse-50.png",
-      icon: "/assets/images/icons8-fertilizer-64 1.png",
+      icon: "/assets/images/fertilizer.png",
     },
     {
       id: 3,
       image: "/assets/images/scale.png",
       name: "Magic Scale",
       backgroundImage: "/assets/images/Ellipse-50.png",
-      icon: "/assets/images/icons8-fertilizer-64 (1) 1.png",
+      icon: "/assets/images/fertilizer-2.png",
     },
 
 
@@ -63,7 +63,7 @@ const ItemShopModal = ({ show, onClose }) => {
                     className="w-full h-full object-cover"
                   />
                 </div>
-                <div className="absolute top-2 left-2 w-8 h-8 z-10">
+                <div className="absolute top-2 left-[10px] w-7 h-7 z-10">
                   <img
                     src={item.icon}
                     alt={`${item.name} icon`}

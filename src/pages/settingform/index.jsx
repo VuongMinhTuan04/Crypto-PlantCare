@@ -39,10 +39,9 @@ const SettingsPage = () => {
       const decodedToken = jwtDecode(token);
       console.log(decodedToken)
       const expirationTime = decodedToken.exp * 1000; // Convert to milliseconds
-
+      console.log(expirationTime)
       // Lấy thời gian hiện tại
       const currentTime = Date.now();
-
       // Kiểm tra nếu token đã hết hạn
       if (currentTime > expirationTime) {
         return "Token has expired.";
@@ -58,7 +57,6 @@ const SettingsPage = () => {
 
   return (
     <div className="bg-background-green h-full w-full">
-      {console.log(user)}
       <h1 className="text-2xl font-bold text-black pt-12 pl-11">Setting</h1>
       <div className="flex items-center justify-center w-full px-5 pt-10 relative ">
         {/* Phần nội dung chính */}

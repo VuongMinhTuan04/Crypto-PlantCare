@@ -120,7 +120,7 @@ function GameHome() {
       <div className="relative">
         <button
           onClick={handleBasketClick}
-          className="absolute top-28 right-4 w-12 h-12 flex items-center justify-center transform transition-transform duration-200"
+          className="absolute top-6 right-4 w-12 h-12 flex items-center justify-center transform transition-transform duration-200"
         >
           <img
             src="/assets/images/Ellipse-42.png"
@@ -139,7 +139,7 @@ function GameHome() {
       <div className="relative">
         <button
           onClick={handleShovelClick}
-          className={`absolute top-44 right-4 w-12 h-12 flex items-center justify-center 
+          className={`absolute top-20 right-4 w-12 h-12 flex items-center justify-center 
           transform transition-transform duration-200 
           ${shovelClicked ? "scale-90" : "scale-100"}`}
         >
@@ -155,7 +155,7 @@ function GameHome() {
           />
         </button>
         
-        <div className="absolute top-48 right-[70px]">
+        <div className="absolute top-20 right-[70px]">
           <ItemShopModal
             show={shovelClicked}
             className={`absolute top-1/2 left-12 transform translate-y-full ${

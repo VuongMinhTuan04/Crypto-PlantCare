@@ -49,6 +49,7 @@ export default {
       "background-shop": "url('/assets/images/background-shop.png')",
       "background-green": "url('/assets/images/background-green.png')",
       "background-congrats": "url('/assets/images/Rectangle 70.png')",
+      "background-lg-shop": "url('/assets/images/bg-lg-shop.png')",
     },
   },
   plugins: [

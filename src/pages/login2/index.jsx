@@ -75,6 +75,7 @@ const FoundWallet = () => {
     const fetchUserSOLDetails = async () => {
       try {
         const resp = await userDetail(user.userId);
+        console.log(resp)
         if (resp.message?.message === "User not found") {
           return; // Dừng nếu user không tồn tại
         }

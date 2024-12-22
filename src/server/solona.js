@@ -1,13 +1,10 @@
-import { clusterApiUrl, Connection, Keypair, PublicKey, SystemProgram, Transaction } from '@solana/web3.js';
 import bodyParser from 'body-parser';
-import bs58 from 'bs58';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import express from 'express';
 import { OAuth2Client } from "google-auth-library";
 import jwt from 'jsonwebtoken';
 import mongoose from 'mongoose';
-
 dotenv.config();
 // import Chance from 'chance';
 // const chance = new Chance();
@@ -29,7 +26,25 @@ app.use(cors({
   allowedHeaders: 'Content-Type,Authorization'  // Allowed headers
 }));
 
-// Kết nối MongoDB
+// Middleware xác thực token
+const authMiddleware = (req, res, next) => {
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+
+  const token = authHeader.split(" ")[1];
+
+  try {
+    const decoded = jwt.verify(token, CLIENT_SECRET);
+    req.user = decoded; // Lưu thông tin người dùng vào `req` để dùng trong route
+    next();
+  } catch (error) {
+    return res.status(401).json({ message: "Invalid token" });
+  }
+};
+
 const connectDB = async () => {
   try {
     await mongoose.connect(process.env.MONGODB_URI
@@ -86,6 +101,21 @@ app.post("/auth/google", async (req, res) => {
     res.status(401).send("Invalid token");
   }
 });
+
+app.get("/user/detail", authMiddleware, (req, res) => {
+  const user = req.user;
+
+  res.json({
+    message: "User detail fetched successfully",
+    user: {
+      userId: user.userId,
+      email: user.email,
+      name: user.name,
+      picture: user.picture,
+    },
+  });
+});
+
 
 app.get("/test", async (req, res) => {
   console.log("Client ID:", CLIENT_ID);
