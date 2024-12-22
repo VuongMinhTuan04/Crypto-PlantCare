@@ -1,4 +1,4 @@
-import { userDetail, userDetailGoogle } from "@/utils/authServices";
+import { getUserBySub, userDetail, userDetailGoogle } from "@/utils/authServices";
 import {
   AdjustmentsHorizontalIcon,
   ArrowDownCircleIcon,
@@ -56,6 +56,7 @@ function Wallet() {
   const [showPopup, setShowPopup] = useState(false);
   const [iconCopy, setIconCopy] = useState(false);
   const [balance, setBalance] = useState(null);
+  const [treecoin, setTreecoin] = useState(0);
 
   useEffect(() => {
     if (publicKey) {
@@ -76,6 +77,18 @@ function Wallet() {
     }
   }, [publicKey]);
 
+
+  // useEffect(() => {
+  //   setUserId(localStorage.getItem('userId'));
+  //   if(userId){
+  //     console.log("Day la user Id: ",userId);
+  //   }else{
+  //     console.log("userId trong");
+  //   }
+    
+    
+  // }, []);
+
   const handleCopy = (text) => {
     navigator.clipboard.writeText(text).then(() => {
       setIconCopy(true);
@@ -83,7 +96,10 @@ function Wallet() {
     });
   };
 
+
+
   const [user, setUser] = useState([]);
+  const [userLoaded, setUserLoaded] = useState(false);
   useEffect(() => {
     // Kiểm tra và xử lý token Google
     const tokenGoogle = localStorage.getItem("tokenGoogle");
@@ -93,7 +109,9 @@ function Wallet() {
         const loadUserData = async () => {
           try {
             const resp = await userDetailGoogle(parsedToken);
+            
             setUser(resp.user);
+            setUserLoaded(true);
             console.log(resp.user);
           } catch (error) {
             console.error("Failed to fetch user details:", error);
@@ -106,24 +124,28 @@ function Wallet() {
     }
   }, []);
 
-  useEffect(() => {
-    if (!user) {
-      return;
-    }
-    const fetchUserSOLDetails = async () => {
-      try {
-        const resp = await userDetail(user.userId);
-        if (resp.message?.message === "User not found") {
-          return;
-        }
-        console.log(resp);
-      } catch (error) {
-        console.log("Failed to fetch user SOL details:", error);
-      }
-    };
+  const [userBySub, setUserBySub] = useState(null);
 
-    fetchUserSOLDetails();
-  }, [user]);
+  useEffect(() => {
+    // Chỉ gọi API khi userLoaded là true và user có userId
+    if (userLoaded && user?.userId) {
+      const fetchUserBySub = async () => {
+        try {
+          const resp = await getUserBySub(user.userId);
+          if (!resp) {
+            console.log("User not found");
+            return;
+          }
+          console.log("Tim thay user: ", resp);
+          setUserBySub(resp);
+        } catch (error) {
+          console.error("Failed to fetch user SOL details:", error);
+        }
+      };
+
+      fetchUserBySub();
+    }
+  }, [userLoaded, user]);
 
 
 
@@ -213,7 +235,7 @@ function Wallet() {
                       PTC
                     </span>
                     <span className="text-black text-sm font-medium">
-                      0.000005
+                      {!userBySub?'...':userBySub.points}
                     </span>
                   </span>
                 </div>

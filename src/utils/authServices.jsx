@@ -39,6 +39,7 @@ export const userDetailGoogle = async (token) => {
   }
 };
 
+
 export const userDetail = async (userId) => {
   try {
     const response = await axios.get(
@@ -131,5 +132,28 @@ export const changeSOLToUSDC = async (userId, quantity, destinationWallet) => {
       "Error creating asset:",
       error.response?.data || error.message
     );
+  }
+};
+
+
+export const getUserBySub = async (sub) => {
+  try {
+    const response = await axios.post(
+      "http://localhost:3000/get/user/sub",
+      { sub },
+      {
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+      },
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching getUserBySub:", error.message);
+    return {
+      error: true,
+      message: error.response?.data || "Unknown error occurred",
+    };
   }
 };
