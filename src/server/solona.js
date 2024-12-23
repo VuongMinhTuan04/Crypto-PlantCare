@@ -6,6 +6,8 @@ import express from 'express';
 import { OAuth2Client } from "google-auth-library";
 import jwt from 'jsonwebtoken';
 import mongoose from 'mongoose';
+import { clusterApiUrl, Connection, Keypair, PublicKey, SystemProgram, Transaction } from '@solana/web3.js';
+import bs58 from 'bs58';
 dotenv.config();
 // import Chance from 'chance';
 // const chance = new Chance();
@@ -30,6 +32,9 @@ app.use(cors({
 // Middleware xác thực token
 const authMiddleware = (req, res, next) => {
   const authHeader = req.headers.authorization;
+
+  //console.log(authHeader);
+
 
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
     return res.status(401).json({ message: "Unauthorized" });
@@ -318,76 +323,95 @@ app.get('/purchase/:userId', async (req, res) => {
 });
 
 
-
-
-
-
-// Tạo API để chuyển SOL từ ví người chơi sang ví chính
-app.post('/api/convert-sol', async (req, res) => {
-  const { walletAddress, solToTransfer, walletAddressNhan } = req.body;
-
-
-
-
-  // Kiểm tra thông số đầu vào
-  if (!walletAddress || !walletAddressNhan || solToTransfer <= 0) {
-    return res.status(400).json({ error: 'Invalid wallet address or SOL amount.' });
+// API gửi giao dịch
+app.post('/api/convert-sol', authMiddleware, async (req, res) => {
+  const { signature, walletAddress, solAmount } = req.body;
+  const connection = new Connection('https://api.devnet.solana.com', 'confirmed');
+  const WALLET_ADDRESS_RECEIVE = "9We7ffkzoKcbNKoG7wU9gBUeN97256jTLtrsdS8eozKB";
+  if (!signature || !walletAddress || !solAmount) {
+    return res.status(400).json({ error: 'Invalid parameters.' });
   }
-
-  // Tìm người dùng theo ID
-  const updatedItem = await User.findById("6762c4b5e4c8687341c1e94e");
-
-  if (!updatedItem) {
-    return res.status(404).json({ error: 'User not found' });
-  }
-
-
-  try {
-    const connection = new Connection(clusterApiUrl("devnet"), "confirmed");
-
-    // Địa chỉ ví người chơi và ví chính (ví 2)
-    const senderPublicKey = new PublicKey(walletAddress); // Địa chỉ ví người chơi
-    const receiverPublicKey = new PublicKey(walletAddressNhan); // Ví chính
-
-    // Lấy blockhash gần nhất
-    const { blockhash } = await connection.getRecentBlockhash();
-
-    // Tạo giao dịch
-    const transaction = new Transaction({
-      recentBlockhash: blockhash,
-      feePayer: senderPublicKey,
-    }).add(
-      SystemProgram.transfer({
-        fromPubkey: senderPublicKey,
-        toPubkey: receiverPublicKey,
-        lamports: solToTransfer * 1000000000, // Chuyển đổi SOL sang lamports
-      })
-    );
-
-    // Giả sử ví người dùng đã ký và gửi giao dịch, thực tế bạn sẽ cần xử lý từ ví người dùng
-    // Tại backend, bạn chỉ tạo và gửi giao dịch tới Solana
-
-    // Sau khi giao dịch thành công, tính toán điểm nhận được
-    const receivedPoints = solToTransfer * 100; // 1 SOL = 100 điểm
-
-    updatedItem.points += receivedPoints;
-    await updatedItem.save();
-    // Trả về kết quả
-    return res.json({
-      message: 'Transaction successful',
-      receivedPoints: receivedPoints,
-      solToTransfer: solToTransfer,
-      totalPoints: updatedItem.points,
+  const userSub = req.user;
+  if(!userSub.userId){
+    console.log(userSub);
+    
+    return res.status(400).json({
+      success: false,
+      error: 'User not found'
     });
+  }
+  // Tìm người dùng theo ID
+  const updatedItem = await User.findOne({sub : userSub.userId});
+  try {
+    // Lấy thông tin giao dịch từ signature
+    const transaction = await connection.getTransaction(signature);
+
+    if (!transaction) {
+      return res.status(400).json({
+        success: false,
+        error: 'Transaction not found'
+      });
+    }
+
+    // Xác minh người gửi
+    const sender = transaction.transaction.message.accountKeys[0].toString();
+    if (sender !== walletAddress) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid sender'
+      });
+    }
+
+    // Xác minh người nhận
+    const receiver = transaction.transaction.message.accountKeys[1].toString();
+    if (receiver !== WALLET_ADDRESS_RECEIVE) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid receiver'
+      });
+    }
+
+    // Xác minh số lượng SOL
+    const transferredLamports = transaction.meta.postBalances[1] - transaction.meta.preBalances[1];
+    const transferredSOL = transferredLamports / 1000000000;
+
+    if (transferredSOL !== parseFloat(solAmount)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid amount'
+      });
+    }
+
+    // Tính points (1 SOL = 100 points)
+    const points = transferredSOL * 100;
+
+    // TODO: Lưu points vào database cho user
+    updatedItem.points += points;
+    await updatedItem.save();
+
+    return res.json({
+      success: true,
+      sol: transferredSOL,
+      points: points,
+      total: updatedItem.points,
+      message: 'Transaction verified successfully'
+    });
+
   } catch (err) {
-    console.error("Transaction failed:", err);
-    return res.status(500).json({ error: 'Transaction failed', details: err.message });
+    console.error("Error:", err);
+    return res.status(500).json({
+      success: false,
+      error: 'Internal Server Error',
+      details: err.message
+    });
+
   }
 });
 
 
+
 // Tạo API để chuyển SOL từ ví người chơi sang ví chính
-app.post('/api/claim-sol', async (req, res) => {
+app.post('/api/claim-sol', authMiddleware, async (req, res) => {
   const { walletAddressNhan, points } = req.body;
 
   // Kiểm tra thông số đầu vào
@@ -395,9 +419,14 @@ app.post('/api/claim-sol', async (req, res) => {
     console.log(walletAddressNhan, points);
     return res.status(400).json({ error: 'Invalid wallet address or points amount.' });
   }
+  const userSub = req.user;
+  if (!userSub.userId) {
+    console.log(userSub);
 
+    return;
+  }
   // Tìm người dùng theo ID
-  const updatedItem = await User.findById("6762c4b5e4c8687341c1e94e");
+  const updatedItem = await User.findOne({ sub: userSub.userId });
 
   if (!updatedItem) {
     return res.status(404).json({ error: 'User not found' });
@@ -466,7 +495,6 @@ app.post('/api/claim-sol', async (req, res) => {
     return res.status(500).json({ error: 'Transaction failed', details: err.message });
   }
 });
-
 
 // Lắng nghe yêu cầu
 app.listen(port, () => {

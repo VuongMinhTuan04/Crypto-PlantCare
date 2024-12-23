@@ -144,7 +144,7 @@ const PhantomWallet = () => {
             setTransactionStatus("Transaction successful!");
 
             // Gọi API backend để tính điểm
-            const response = await axios.post("http://localhost:5000/api/convert-sol", {
+            const response = await axios.post("http://localhost:3000/api/convert-sol", {
                 solToTransfer: solToTransfer,
                 walletAddress: walletAddress,
                 walletAddressNhan: walletAddressNhan,
