@@ -1,3 +1,4 @@
+import { clusterApiUrl, Connection, Keypair, PublicKey, SystemProgram, Transaction } from '@solana/web3.js';
 import bodyParser from 'body-parser';
 import cors from 'cors';
 import dotenv from 'dotenv';
@@ -103,27 +104,7 @@ app.post("/auth/google", async (req, res) => {
   }
 });
 
-<<<<<<< HEAD
-=======
-const authMiddleware = (req, res, next) => {
-  const authHeader = req.headers.authorization;
 
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return res.status(401).json({ message: "Unauthorized" });
-  }
-
-  const token = authHeader.split(" ")[1];
-
-  try {
-    const decoded = jwt.verify(token, CLIENT_SECRET);
-    req.user = decoded; // Lưu thông tin người dùng vào `req` để dùng trong route
-    next();
-  } catch (error) {
-    return res.status(401).json({ message: "Invalid token" });
-  }
-};
-
->>>>>>> f317e966e8ecd0ae78edffbff42a884b4d05373b
 app.get("/user/detail", authMiddleware, (req, res) => {
   const user = req.user;
 
@@ -138,10 +119,6 @@ app.get("/user/detail", authMiddleware, (req, res) => {
   });
 });
 
-<<<<<<< HEAD
-
-=======
->>>>>>> f317e966e8ecd0ae78edffbff42a884b4d05373b
 app.get("/test", async (req, res) => {
   console.log("Client ID:", CLIENT_ID);
   console.log("Client Secret:", CLIENT_SECRET);
@@ -233,9 +210,13 @@ app.put('/users/:id', async (req, res) => {
 
 const treeSchema = new mongoose.Schema({
   type: { type: String, required: true },
+  userId: { type: String, required: true },
+  name: { type: String, required: true },
+  imageUrl: { type: String, required: true },
+  description: { type: String, required: true },
   time: { type: String, required: true },
-  points: { type: Number, default: 0 },
-  fertilizer: { type: Boolean, default: false },
+  points: { type: String, required: true },
+  status: { type: Boolean, required: true },
 });
 
 const Tree = mongoose.model('Tree', treeSchema);
@@ -260,10 +241,10 @@ app.put('/trees/:id', async (req, res) => {
 
 const itemScheme = new mongoose.Schema({
   type: { type: String, required: true },
-  time: { type: String, required: true },
   name: { type: String, default: 0 },
+  icon_img: { type: String, required: true },
   price: { type: String, required: true },
-  quality: { type: Number, required: true },
+  time_dele: { type: String, required: true },
 });
 
 const Item = mongoose.model('Item', itemScheme);
@@ -307,15 +288,35 @@ app.get('/purchase', async (req, res) => {
 });
 
 app.post('/purchase', async (req, res) => {
-  const newItem = new Purchase(req.body);
-  await newItem.save();
-  res.json(newItem);
-});
-
-app.put('/purchase/:id', async (req, res) => {
-  const updatedItem = await Purchase.findByIdAndUpdate(req.params.id, req.body, { new: true });
+  const filter = { itemId: req.body.itemId }; // Điều kiện tìm kiếm
+  const update = req.body; // Dữ liệu mới
+  const options = { new: true, upsert: true }; // `upsert` sẽ tạo mới nếu không tìm thấy
+  
+  const updatedItem = await Purchase.findOneAndUpdate(filter, update, options);
   res.json(updatedItem);
 });
+
+
+app.get('/purchase/:userId', async (req, res) => {
+  try {
+    // Tìm tất cả các tài liệu với userId tương ứng
+    const userPurchases = await Purchase.find({ userId: req.params.userId });
+
+    if (userPurchases.length === 0) {
+      return res.status(404).json({ message: "No purchases found for this userId" });
+    }
+
+    // Ghi log toàn bộ dữ liệu
+    console.log("User purchases:", userPurchases);
+
+    // Trả về dữ liệu
+    res.json(userPurchases);
+  } catch (error) {
+    console.error("Error fetching purchases:", error.message);
+    res.status(500).json({ message: "Error fetching purchases", error: error.message });
+  }
+});
+
 
 
 

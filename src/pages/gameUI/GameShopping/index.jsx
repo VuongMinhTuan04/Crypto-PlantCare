@@ -1,105 +1,46 @@
+import { getAllItems } from "@/utils/authServices";
 import { ArrowLeftCircleIcon } from "@heroicons/react/24/solid";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 // Shop item data structure
-const SHOP_ITEMS = [
-  {
-    id: 1,
-    name: "Watering Can",
-    icon: "/assets/images/watering-can.png",
-    price: 2,
-    background: "/assets/images/Ellipse-50.png",
-    available: true,
-    quantity: "1",
-    position: "-top-3 -left-[10px]"
-  },
-  {
-    id: 2,
-    name: "Watering Can",
-    icon: "/assets/images/watering-can.png",
-    price: 8,
-    background: "/assets/images/Ellipse-50.png",
-    available: true,
-    quantity: "4",
-    position: "-top-3 -left-[10px]"
+const ITEM_CONFIGS = {
+  quantities: [
+    { quantity: "1", price: 1 },
+    { quantity: "4", price: 4 },
+    { quantity: "9", price: 8 }
+  ],
+  positions: {
+    "Normal Fertilizer": "-top-2 -left-[5px]",
+    "SuperFertilizer": "-top-2 -left-[4px]",
+    "VIP Fertilizer": "-top-2 -left-[4px]",
+  }
+};
 
-  },
-  {
-    id: 3,
-    name: "Watering Can",
-    icon: "/assets/images/watering-can.png",
-    price: 15,
-    background: "/assets/images/Ellipse-50.png",
-    available: true,
-    quantity: "9",
-    position: "-top-3 -left-[10px]"
+const transformApiData = (apiItems) => {
+  const transformedItems = [];
+  let currentId = 1;
 
-  },
-  {
-    id: 4,
-    name: "Normal Fertilizer",
-    icon: "/assets/images/fertilizer.png",
-    price: 4,
-    background: "/assets/images/Ellipse-50.png",
-    available: true,
-    quantity: "1",
-    position: "-top-2 -left-[5px]"
-  },
-  {
-    id: 5,
-    name: "Normal Fertilizer",
-    icon: "/assets/images/fertilizer.png",
-    price: 15,
-    background: "/assets/images/Ellipse-50.png",
-    available: true,
-    quantity: "4",
-    position: "-top-2 -left-[5px]"
-  },
-  {
-    id: 6,
-    name: "Normal Fertilizer",
-    icon: "/assets/images/fertilizer.png",
-    price: 30,
-    background: "/assets/images/Ellipse-50.png",
-    available: true,
-    quantity: "9",
-    position: "-top-2 -left-[5px]"
-  },
-  {
-    id: 7,
-    name: "Super Fertilizer",
-    icon: "/assets/images/fertilizer-2.png",
-    price: 5,
-    background: "/assets/images/Ellipse-50.png",
-    available: false,
-    quantity: "1",
-    position: "-top-2 -left-[4px]"
-  },
-  {
-    id: 8,
-    name: "Super Fertilizer",
-    icon: "/assets/images/fertilizer-2.png",
-    price: 18,
-    background: "/assets/images/Ellipse-50.png",
-    available: true,
-    quantity: "4",
-    position: "-top-2 -left-[4px]"
-  },
-  {
-    id: 9,
-    name: "Super Fertilizer",
-    icon: "/assets/images/fertilizer-2.png",
-    price: 35,
-    background: "/assets/images/Ellipse-50.png",
-    available: true,
-    quantity: "9",
-    position: "-top-2 -left-[4px]"
-  },
-];
+  apiItems.forEach(apiItem => {
+    // Create three variants for each item (different quantities)
+    ITEM_CONFIGS.quantities.forEach(({ quantity, price }) => {
+      transformedItems.push({
+        id: currentId++,
+        name: apiItem.name,
+        icon: apiItem.icon_img,
+        price: Number(apiItem.price) * price, // Multiply base price by quantity multiplier
+        background: "/assets/images/Ellipse-50.png",
+        available: true,
+        quantity: quantity,
+        position: ITEM_CONFIGS.positions[apiItem.name] || "-top-3 -left-[10px]" // Default position if not specified
+      });
+    });
+  });
 
+  return transformedItems;
+};
 const ShopItem = ({ item, isActive, onClick }) => (
-  <div 
+  <div
     className="relative w-12 h-12 cursor-pointer"
     title={item.name}
     onClick={onClick}
@@ -111,7 +52,7 @@ const ShopItem = ({ item, isActive, onClick }) => (
         className={`w-full h-full object-contain ${
           !item.available && "opacity-50"
         } ${
-          isActive ? 'filter drop-shadow-[0_0_8px_rgba(255,255,255,1)]' : ''
+          isActive ? "filter drop-shadow-[0_0_8px_rgba(255,255,255,1)]" : ""
         } transition-filter duration-200`}
       />
     </div>
@@ -156,6 +97,8 @@ const BalanceDisplay = ({ balance = 0 }) => (
 );
 
 const ShopPage = () => {
+  const [shopItems, setShopItems] = useState([]);
+
   const navigate = useNavigate();
   const userBalance = 20;
   const [activeItemId, setActiveItemId] = useState(null);
@@ -164,16 +107,30 @@ const ShopPage = () => {
     setActiveItemId(itemId === activeItemId ? null : itemId);
   };
 
+  useEffect(() => {
+    loadItems();
+  }, []);
+
+  const loadItems = async () => {
+    try {
+      const resp = await getAllItems();
+      const transformedItems = transformApiData(resp);
+      setShopItems(transformedItems);
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+
+  
   const handleBuy = () => {
-    // Tìm item đang được chọn
-    const selectedItem = SHOP_ITEMS.find(item => item.id === activeItemId);
-    
+    const selectedItem = shopItems.find((item) => item.id === activeItemId);
     if (selectedItem) {
       console.log("Buying item:", {
         id: selectedItem.id,
         name: selectedItem.name,
         price: selectedItem.price,
-        quantity: selectedItem.quantity
+        quantity: selectedItem.quantity,
       });
     } else {
       console.log("Please select an item to buy");
@@ -198,10 +155,10 @@ const ShopPage = () => {
       {/* Shop Grid */}
       <div className="container mx-auto">
         <div className="grid grid-cols-3 gap-6 place-items-center h-96 relative top-14 md:relative md:top-0 sm:relative sm:-top-12">
-          {SHOP_ITEMS.map((item) => (
-            <ShopItem 
-              key={item.id} 
-              item={item} 
+          {shopItems.map((item) => (
+            <ShopItem
+              key={item.id}
+              item={item}
               isActive={activeItemId === item.id}
               onClick={() => handleItemClick(item.id)}
             />
@@ -213,8 +170,8 @@ const ShopPage = () => {
           <button
             onClick={handleBuy}
             className={`w-80 py-2 px-4 rounded-full font-bold transition duration-300 ${
-              activeItemId 
-                ? "bg-green-500 text-white hover:bg-green-600" 
+              activeItemId
+                ? "bg-green-500 text-white hover:bg-green-600"
                 : "bg-gray-300 text-gray-500 cursor-not-allowed"
             }`}
             disabled={!activeItemId}

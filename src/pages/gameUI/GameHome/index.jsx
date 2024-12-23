@@ -12,6 +12,7 @@ function GameHome() {
   const [user, setUser] = useState(null);
   const [treeAsset, setTreeAsset] = useState(null);
   const [isFruitReady, setIsFruitReady] = useState(false);
+  const [isCountdownActive, setIsCountdownActive] = useState(false);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -29,9 +30,13 @@ function GameHome() {
 
             // Lọc và lấy cây đầu tiên
             const availableTrees = fetchedNFTs.filter(
-              (nft) => 
-                nft.type === "UniqueAsset" && 
-                ["Green Giant Tree", "Golden Giant Tree", "Purple Giant Tree"].includes(nft.item?.name)
+              (nft) =>
+                nft.type === "UniqueAsset" &&
+                [
+                  "Green Giant Tree",
+                  "Golden Giant Tree",
+                  "Purple Giant Tree",
+                ].includes(nft.item?.name)
             );
 
             if (availableTrees.length > 0) {
@@ -47,7 +52,19 @@ function GameHome() {
     };
 
     fetchUserData();
+    checkExistingCountdown(); 
   }, []);
+
+  const checkExistingCountdown = () => {
+    const storedHarvestTime = localStorage.getItem("harvest-time");
+    if (storedHarvestTime) {
+      const currentTime = Date.now();
+      const harvestTime = parseInt(storedHarvestTime) + 5 * 60 * 60 * 1000; // 5 giờ
+      if (currentTime < harvestTime) {
+        setIsCountdownActive(true);
+      }
+    }
+  };
 
   const handleBasketClick = () => {
     navigate("/game-shopping");
@@ -57,6 +74,33 @@ function GameHome() {
     setShovelClicked((prev) => !prev);
   };
 
+  const handleWateringCanUse = () => {
+    const storedHarvestTime = localStorage.getItem("harvest-time");
+    if (storedHarvestTime) {
+      const currentTime = Date.now();
+      const harvestTime = parseInt(storedHarvestTime) + 5 * 60 * 60 * 1000; // 5 giờ
+      
+      if (currentTime < harvestTime) {
+        alert("Bạn đã tưới nước rồi! Hãy đợi đến khi cây ra quả.");
+        return false;
+      }
+    }
+    
+    setIsCountdownActive(true);
+    const currentTime = Date.now();
+    localStorage.setItem("harvest-time", currentTime.toString());
+    return true;
+  };
+
+  const handleComplete = () => {
+    setIsFruitReady(true);
+    setIsCountdownActive(false);
+  };
+
+  const handleHarvestComplete = () => {
+    alert("Cây đã ra quả! Đã đến lúc thu hoạch.");
+    setIsCountdownActive(false);
+  };
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-full">
@@ -65,12 +109,6 @@ function GameHome() {
     );
   }
 
-  const handleComplete = () => {
-    setIsFruitReady(true);
-  };
-  const handleHarvestComplete = () => {
-    alert("Cây đã ra quả! Đã đến lúc thu hoạch.");
-  };
   return (
     <div className="relative w-full h-full">
       {/* Level Image */}
@@ -84,12 +122,12 @@ function GameHome() {
           LV 3
         </span>
       </div>
-      
+
       {/* SOL và SAO */}
       <div className="flex">
         {[1, 2].map((_, index) => (
-          <div 
-            key={index} 
+          <div
+            key={index}
             className="w-20 h-8 bg-gray-300 absolute top-14 right-28 flex items-center rounded-full"
             style={{ right: index === 0 ? 112 : 20 }}
           >
@@ -104,20 +142,24 @@ function GameHome() {
           </div>
         ))}
       </div>
-      
-      
+
       {/* Tree Image */}
       <div className="absolute top-2/4 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full max-w-[400px] flex items-center justify-center">
         <img
-          src={treeAsset?.item?.imageUrl || ''}
+          src={treeAsset?.item?.imageUrl || ""}
           alt="tree-image"
           className="max-w-full h-auto object-contain"
         />
       </div>
-     
-      <CountdownToHarvest harvestDurationHours={5} onComplete={handleHarvestComplete} />
+
+      {isCountdownActive && (
+        <CountdownToHarvest
+          harvestDurationHours={5}
+          onComplete={handleHarvestComplete}
+        />
+      )}
       {/* Basket Button */}
-      <div className="relative">
+      <div className="relative top-20">
         <button
           onClick={handleBasketClick}
           className="absolute top-6 right-4 w-12 h-12 flex items-center justify-center transform transition-transform duration-200"
@@ -136,7 +178,7 @@ function GameHome() {
       </div>
 
       {/* Shovel Button */}
-      <div className="relative">
+      <div className="relative top-20">
         <button
           onClick={handleShovelClick}
           className={`absolute top-20 right-4 w-12 h-12 flex items-center justify-center 
@@ -154,10 +196,11 @@ function GameHome() {
             className="absolute w-6 h-6 z-10 object-contain"
           />
         </button>
-        
+
         <div className="absolute top-20 right-[70px]">
           <ItemShopModal
             show={shovelClicked}
+            onWateringCanUse={handleWateringCanUse}
             className={`absolute top-1/2 left-12 transform translate-y-full ${
               shovelClicked ? "block" : "hidden"
             }`}
