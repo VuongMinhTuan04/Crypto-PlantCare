@@ -1,6 +1,7 @@
 import axios from "axios";
 
 const API_KEY = import.meta.env.VITE_GAMESHIFT_API_KEY;
+const API_URL_BE = "http://localhost:3000"
 // Tạo NFTs
 export const createUser = async (referenceId, email, externalWalletAddress) => {
   try {
@@ -22,7 +23,7 @@ export const createUser = async (referenceId, email, externalWalletAddress) => {
 };
 export const userDetailGoogle = async (token) => {
   try {
-    const response = await axios.get("http://localhost:3000/user/detail", {
+    const response = await axios.get(`${API_URL_BE}/user/detail`, {
       headers: {
         Accept: "application/json",
         Authorization: `Bearer ${token}`,
@@ -198,6 +199,47 @@ export const converPointsToSol = async (walletAddressNhan, points, token) => {
     return response.data;
   } catch (error) {
     console.error("Error fetching converPointsToSol:", error.message);
+    return {
+      error: true,
+      message: error.response?.data || "Unknown error occurred",
+    };
+  }
+};
+export const getAllItems = async () => {
+  try {
+    const response = await axios.get(
+      `${API_URL_BE}/items`,
+
+      {
+        headers: {
+          Accept: "application/json",
+        },
+      },
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching getAllItems:", error.message);
+    return {
+      error: true,
+      message: error.response?.data || "Unknown error occurred",
+    };
+  }
+};
+
+export const getAllPurchaseByUserId = async (userId) => {
+  try {
+    const response = await axios.get(
+      `${API_URL_BE}/purchase/${userId}`,
+
+      {
+        headers: {
+          Accept: "application/json",
+        },
+      },
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching getAllPurchase:", error.message);
     return {
       error: true,
       message: error.response?.data || "Unknown error occurred",

@@ -68,7 +68,7 @@ const FoundWallet = () => {
   ];
 
   useEffect(() => {
-    if (!user) {
+    if (!user.userId) {
       return; // Dừng ngay lập tức nếu không có user
     }
 
@@ -77,7 +77,7 @@ const FoundWallet = () => {
         const resp = await userDetail(user.userId);
         console.log(resp)
         if (resp.message?.message === "User not found") {
-          return; // Dừng nếu user không tồn tại
+          return; 
         }
         setUserSOL(resp.data[0]);
       } catch (error) {

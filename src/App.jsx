@@ -1,10 +1,9 @@
 import { jwtDecode } from "jwt-decode";
 import { Fragment, useEffect } from "react";
 import {
-  Navigate,
   Route,
   BrowserRouter as Router,
-  Routes,
+  Routes
 } from "react-router-dom";
 import VideoBackground from "./components/backgroundvideo";
 import LayoutWebsite from "./DefaultLayouts/LayoutWebsite";
@@ -29,11 +28,10 @@ const App = () => {
 
       if (currentTime > expirationTime) {
         localStorage.removeItem("tokenGoogle");
-        return <Navigate to="/game-login" replace />;
+        window.location.href = '/game-login'
       }
     } catch (error) {
-      localStorage.removeItem("tokenGoogle");
-      return <Navigate to="/game-login" replace />;
+      console.log(error)
     }
   };
 
