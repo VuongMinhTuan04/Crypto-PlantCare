@@ -157,3 +157,50 @@ export const getUserBySub = async (sub) => {
     };
   }
 };
+
+
+export const converSolToPoints = async (signature, walletAddress, solAmount, token) => {
+  try {
+    const response = await axios.post(
+      "http://localhost:3000/api/convert-sol",
+      { signature, walletAddress, solAmount },
+      {
+        headers: {
+          Accept: "application/json",
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching converSolToPoints:", error.message);
+    return {
+      error: true,
+      message: error.response?.data || "Unknown error occurred",
+    };
+  }
+};
+
+export const converPointsToSol = async (walletAddressNhan, points, token) => {
+  try {
+    const response = await axios.post(
+      "http://localhost:3000/api/claim-sol",
+      { walletAddressNhan, points },
+      {
+        headers: {
+          Accept: "application/json",
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching converPointsToSol:", error.message);
+    return {
+      error: true,
+      message: error.response?.data || "Unknown error occurred",
+    };
+  }
+};

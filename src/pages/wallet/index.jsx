@@ -1,4 +1,4 @@
-import { getUserBySub, userDetail, userDetailGoogle } from "@/utils/authServices";
+import { converPointsToSol, converSolToPoints, getUserBySub, userDetail, userDetailGoogle } from "@/utils/authServices";
 import {
   AdjustmentsHorizontalIcon,
   ArrowDownCircleIcon,
@@ -7,9 +7,13 @@ import {
 } from "@heroicons/react/24/solid";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
-import { Connection, PublicKey } from "@solana/web3.js";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+
+import { Connection, PublicKey, Transaction, SystemProgram, sendAndConfirmTransaction } from '@solana/web3.js';
+
+// Thêm vào đầu file của bạn
+import axios from "axios";
 
 function truncateMiddle(text, startLength = 15, endLength = 4) {
   if (text.length <= startLength + endLength) {
@@ -55,8 +59,197 @@ function Wallet() {
   const { publicKey } = useWallet();
   const [showPopup, setShowPopup] = useState(false);
   const [iconCopy, setIconCopy] = useState(false);
-  const [balance, setBalance] = useState(null);
+  const [balance, setBalance] = useState(0);
   const [treecoin, setTreecoin] = useState(0);
+  const [solClaim, setSolClaim] = useState(0);
+  const [solToTransfer, setSolToTransfer] = useState(0);
+  const [isClaimEnabled, setIsClaimEnabled] = useState(false);
+  const [isClaimEnabled2, setIsClaimEnabled2] = useState(false);
+  const [walletAddress, setWalletAddress] = useState("");
+  const [pointsToConvert, setPointsToConvert] = useState(0);
+  const [treePointsUser, setTreePointsUser] = useState(0);
+  const [walletAddressNhan, setWalletAddressNhan] = useState("");
+  const [user, setUser] = useState([]);
+  const [userLoaded, setUserLoaded] = useState(false);
+  const [userBySub, setUserBySub] = useState(null);
+
+
+  useEffect(() => {
+    if (!userBySub) {
+      //alert("Ko tim thay userSub.points");
+      return;
+    }
+    setTreePointsUser(userBySub.points);
+  }, [userBySub]);
+
+  useEffect(() => {
+    if (!publicKey) {
+      alert("Ko tim thay dia chi vi");
+      return;
+    }
+    setWalletAddress(publicKey);
+  }, [publicKey]);
+
+  useEffect(() => {
+    setSolToTransfer(1);
+
+
+  }, []);
+
+  useEffect(() => {
+    setPointsToConvert(100);
+
+  }, []);
+
+  useEffect(() => {
+    if (!solToTransfer) {
+      setTreecoin(0);
+      return;
+    }
+    const solValue = parseFloat(solToTransfer);
+    if (isNaN(solValue) || solValue <= 0) {
+      setTreecoin(0);
+    } else {
+      setTreecoin(solToTransfer * 100);
+    }
+  }, [solToTransfer]);
+
+  useEffect(() => {
+    if (!pointsToConvert) {
+      setSolClaim(0);
+      return;
+    }
+    const solValue = parseFloat(pointsToConvert);
+    if (isNaN(solValue) || solValue <= 0) {
+      setSolClaim(0);
+    } else {
+      setSolClaim(pointsToConvert / 100);
+    }
+  }, [pointsToConvert]);
+
+
+
+  useEffect(() => {
+
+    setWalletAddressNhan("9We7ffkzoKcbNKoG7wU9gBUeN97256jTLtrsdS8eozKB")
+
+
+  }, []);
+
+  const [receivedPoints, setReceivedPoints] = useState(0);
+
+  const sendSolTransaction = async () => {
+    if (solToTransfer <= 0 || !walletAddress || !walletAddressNhan) {
+      alert('Invalid input');
+      return;
+    }
+
+    //setStatus('Initiating transaction...');
+
+    const connection = new Connection('https://api.devnet.solana.com', 'confirmed');
+    const lamports = solToTransfer * 1000000000; // Chuyển SOL thành Lamports
+
+    try {
+      const { solana } = window;
+
+      if (!solana || !solana.isPhantom) {
+        alert('Please install Phantom wallet');
+        return;
+      }
+
+      const { publicKey } = await solana.connect(); // Kết nối ví Phantom
+      const senderPublicKey = new PublicKey(String(publicKey));
+      const receiverPublicKey = new PublicKey(walletAddressNhan);
+
+      // Lấy recentBlockhash từ mạng Solana
+      const { blockhash } = await connection.getLatestBlockhash();
+
+      // Tạo giao dịch
+      const transaction = new Transaction({
+        recentBlockhash: blockhash,
+        feePayer: senderPublicKey,
+      }).add(
+        SystemProgram.transfer({
+          fromPubkey: senderPublicKey,
+          toPubkey: receiverPublicKey,
+          lamports: lamports,
+        })
+      );
+
+      const signedTransaction = await solana.signTransaction(transaction);
+      const signature = await connection.sendRawTransaction(signedTransaction.serialize());
+
+      // Đợi xác nhận giao dịch
+      const confirmation = await connection.confirmTransaction(signature);
+
+
+      if (confirmation.value.err) {
+        alert('Transaction failed');
+        return;
+      }
+      const tokenGoogle = JSON.parse(localStorage.getItem("tokenGoogle"));
+      // Gọi API backend để tính điểm
+      const response = await converSolToPoints(signature, walletAddress, solToTransfer, tokenGoogle);
+      if (response.error) {
+        console.log(response);
+
+        return;
+      }
+
+      if (!response.points || !response.total || !response.sol) {
+        return;
+      }
+
+      setTreePointsUser(response.total);
+      setBalance((balance - response.sol).toFixed(5));
+      setReceivedPoints(response.points);
+      console.log("Thành công chuyển: ", response.sol);
+      console.log("Nhận được: ", response.points + "points");
+      console.log("Tổng: ", response.total + "points");
+
+    } catch (err) {
+      console.error('Transaction failed:', err);
+
+      alert('Transaction failed');
+    }
+  };
+
+
+  const convertPoints = async () => {
+    if (pointsToConvert <= 0 || !walletAddress) {
+      alert('Invalid input');
+      return;
+    }
+
+    try {
+      // Lấy token từ localStorage hoặc nơi lưu trữ token của bạn
+      const token = JSON.parse(localStorage.getItem('tokenGoogle'));
+      if (!token) {
+        alert("Ko tim thay token");
+        return;
+      }
+
+      // Gọi API với token trong header
+      const response = await converPointsToSol(walletAddress, pointsToConvert, token);
+
+
+
+      console.log(response);
+      if (response.points) {
+        setTreePointsUser(response.points)
+        console.log("Tong sol: ", parseFloat((balance + response.solToReceive)));
+
+        setBalance(((balance + parseFloat(response.solToReceive))));
+
+
+      }
+
+
+    } catch (err) {
+      console.error('Conversion failed:', err);
+
+    }
+  };
 
   useEffect(() => {
     if (publicKey) {
@@ -78,16 +271,20 @@ function Wallet() {
   }, [publicKey]);
 
 
-  // useEffect(() => {
-  //   setUserId(localStorage.getItem('userId'));
-  //   if(userId){
-  //     console.log("Day la user Id: ",userId);
-  //   }else{
-  //     console.log("userId trong");
-  //   }
-    
-    
-  // }, []);
+
+  useEffect(() => {
+    // Cập nhật trạng thái nút Claim
+
+    setIsClaimEnabled(parseFloat(solToTransfer) > 0 && treecoin > 0 && solToTransfer < balance);
+  }, [solToTransfer, treecoin, balance]);
+
+
+
+  useEffect(() => {
+    // Cập nhật trạng thái nút Claim
+    setIsClaimEnabled2(parseFloat(pointsToConvert) > 0 && solClaim > 0);
+  }, [pointsToConvert, solClaim]);
+
 
   const handleCopy = (text) => {
     navigator.clipboard.writeText(text).then(() => {
@@ -98,8 +295,7 @@ function Wallet() {
 
 
 
-  const [user, setUser] = useState([]);
-  const [userLoaded, setUserLoaded] = useState(false);
+
   useEffect(() => {
     // Kiểm tra và xử lý token Google
     const tokenGoogle = localStorage.getItem("tokenGoogle");
@@ -109,10 +305,10 @@ function Wallet() {
         const loadUserData = async () => {
           try {
             const resp = await userDetailGoogle(parsedToken);
-            
+
             setUser(resp.user);
             setUserLoaded(true);
-            console.log(resp.user);
+            //console.log(resp.user);
           } catch (error) {
             console.error("Failed to fetch user details:", error);
           }
@@ -124,7 +320,10 @@ function Wallet() {
     }
   }, []);
 
-  const [userBySub, setUserBySub] = useState(null);
+
+
+
+
 
   useEffect(() => {
     // Chỉ gọi API khi userLoaded là true và user có userId
@@ -133,11 +332,12 @@ function Wallet() {
         try {
           const resp = await getUserBySub(user.userId);
           if (!resp) {
-            console.log("User not found");
+            //console.log("User not found");
             return;
           }
-          console.log("Tim thay user: ", resp);
+          //console.log("Tim thay user: ", resp);
           setUserBySub(resp);
+          setUserLoaded(false);
         } catch (error) {
           console.error("Failed to fetch user SOL details:", error);
         }
@@ -145,7 +345,7 @@ function Wallet() {
 
       fetchUserBySub();
     }
-  }, [userLoaded, user]);
+  }, [userLoaded, user, userBySub]);
 
 
 
@@ -169,31 +369,28 @@ function Wallet() {
 
           <div className="flex justify-between items-center mb-6">
             <button
-              className={`px-4 py-2 w-24 h-10 rounded-full text-sm font-medium ${
-                activeTab === 1
-                  ? "bg-green-500 text-white"
-                  : "bg-white text-green-500 border border-green-500"
-              }`}
+              className={`px-4 py-2 w-24 h-10 rounded-full text-sm font-medium ${activeTab === 1
+                ? "bg-green-500 text-white"
+                : "bg-white text-green-500 border border-green-500"
+                }`}
               onClick={() => setActiveTab(1)}
             >
               Account
             </button>
             <button
-              className={`px-4 py-2 w-24 h-10 rounded-full text-sm font-medium ${
-                activeTab === 2
-                  ? "bg-green-500 text-white"
-                  : "bg-white text-green-500 border border-green-500"
-              }`}
+              className={`px-4 py-2 w-24 h-10 rounded-full text-sm font-medium ${activeTab === 2
+                ? "bg-green-500 text-white"
+                : "bg-white text-green-500 border border-green-500"
+                }`}
               onClick={() => setActiveTab(2)}
             >
               Swap
             </button>
             <button
-              className={`px-4 py-2 rounded-full w-24 h-10 text-sm font-medium ${
-                activeTab === 3
-                  ? "bg-green-500 text-white"
-                  : "bg-white text-green-500 border border-green-500"
-              }`}
+              className={`px-4 py-2 rounded-full w-24 h-10 text-sm font-medium ${activeTab === 3
+                ? "bg-green-500 text-white"
+                : "bg-white text-green-500 border border-green-500"
+                }`}
               onClick={() => setActiveTab(3)}
             >
               Rewards
@@ -208,6 +405,7 @@ function Wallet() {
                 <div className="flex justify-between items-center mt-2 bg-white px-3 py-2 rounded-xl border border-gray-200">
                   <p className="truncate text-black text-sm">
                     {truncateMiddle(String(publicKey))}
+
                   </p>
                   <button
                     onClick={() => handleCopy(publicKey)}
@@ -235,7 +433,7 @@ function Wallet() {
                       PTC
                     </span>
                     <span className="text-black text-sm font-medium">
-                      {!userBySub?'...':userBySub.points}
+                      {!treePointsUser ? '...' : parseFloat(treePointsUser).toFixed(2)}
                     </span>
                   </span>
                 </div>
@@ -249,7 +447,7 @@ function Wallet() {
                       />
                       SOL
                     </span>
-                    <span className="text-black">{balance}</span>
+                    <span className="text-black">{!balance ? '...' : parseFloat(balance).toFixed(5)}</span>
                   </span>
                 </div>
               </div>
@@ -277,7 +475,7 @@ function Wallet() {
                   />
                   <div>
                     <p className="text-gray-500 text-sm">Balance</p>
-                    <p className="text-black font-bold">6.32492421 SOL</p>
+                    <p className="text-black font-bold">{!balance ? '...' : parseFloat(balance).toFixed(5)}</p>
                   </div>
                 </div>
               </div>
@@ -290,9 +488,23 @@ function Wallet() {
                   </p>
                   <div className="flex items-center w-full justify-center relative">
                     <input
-                      placeholder="50.0"
+                      onChange={(e) => {
+                        //console.log("Input: ",e.target.value);
+
+                        if (e.target.value === "") {
+                          //console.log("ROnggg");
+
+                          setSolToTransfer(0);
+                          //console.log("SOl: ",solconver);
+                          return;
+                        }
+                        setSolToTransfer(e.target.value);
+                      }}
+                      value={!solToTransfer ? '' : solToTransfer}
+                      placeholder="Input SOL"
                       className="w-full bg-transparent text-start text-black font-bold border-b-2 px-2 py-1 focus:outline-none focus:ring-0"
                     />
+
                     <span className="text-black flex absolute right-1">
                       <img
                         src="/assets/images/solana-icon.png"
@@ -308,9 +520,9 @@ function Wallet() {
                   <ArrowDownCircleIcon className="size-8 text-white my-3" />
                 </div>
                 <div className="bg-white px-4 py-1 rounded-full  border border-gray-200 flex flex-col">
-                  <p className="text-gray-500 text-[12px]">Burn pet score:</p>
+                  <p className="text-gray-500 text-[12px]">Points Received:</p>
                   <div className="flex relative">
-                    <p className="text-black font-bold flex">500.0</p>
+                    <p className="text-black font-bold flex">{!treecoin ? '...' : treecoin}</p>
                     <span className="text-black flex absolute right-0 bottom-2">
                       <img
                         src="/assets/images/tree-coin.png"
@@ -323,7 +535,13 @@ function Wallet() {
                 </div>
               </div>
               <div className="pt-5">
-                <button className="w-full bg-gray-300 text-gray-500 font-bold text-sm py-3 rounded-full cursor-not-allowed">
+                <button onClick={sendSolTransaction}
+                  className={`w-full ${isClaimEnabled
+                    ? "bg-blue-500 text-white cursor-pointer"
+                    : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                    } font-bold text-sm py-3 rounded-full`}
+                  disabled={!isClaimEnabled}
+                >
                   CLAIM REWARDS
                 </button>
               </div>
@@ -342,7 +560,7 @@ function Wallet() {
                   />
                   <div>
                     <p className="text-gray-500 text-sm">Balance</p>
-                    <p className="text-black font-bold">6.32492421 PTC</p>
+                    <p className="text-black font-bold">{!treePointsUser ? '...' : parseFloat(treePointsUser).toFixed(2)} PTC</p>
                   </div>
                 </div>
               </div>
@@ -351,11 +569,24 @@ function Wallet() {
               <div className="grid grid-cols-1 items-center gap-1">
                 <div className="px-2 rounded-md flex flex-col">
                   <p className="text-gray-500 text-[12px] text-start">
-                    Burn pet score:{" "}
+                    You Pay:
                   </p>
                   <div className="flex items-center w-full justify-center relative">
                     <input
-                      placeholder="50.0"
+                      onChange={(e) => {
+                        //console.log("Input: ",e.target.value);
+
+                        if (e.target.value === "") {
+                          //console.log("ROnggg");
+
+                          setPointsToConvert(0);
+                          //console.log("SOl: ",solconver);
+                          return;
+                        }
+                        setPointsToConvert(e.target.value);
+                      }}
+                      value={!pointsToConvert ? '' : pointsToConvert}
+
                       className="w-full bg-transparent text-start text-black font-bold border-b-2 px-2 py-1 focus:outline-none focus:ring-0"
                     />
                     <span className="text-black flex absolute right-1">
@@ -375,7 +606,7 @@ function Wallet() {
                 <div className="bg-white px-4 py-1 rounded-full  border border-gray-200 flex flex-col">
                   <p className="text-gray-500 text-[12px]">You receicve:</p>
                   <div className="flex relative">
-                    <p className="text-black font-bold flex">500.0</p>
+                    <p className="text-black font-bold flex">{!solClaim ? '...' : solClaim}</p>
                     <span className="text-black flex absolute right-0 bottom-2">
                       <img
                         src="/assets/images/solana-icon.png"
@@ -388,7 +619,13 @@ function Wallet() {
                 </div>
               </div>
               <div className="pt-5">
-                <button className="w-full bg-gray-300 text-gray-500 font-bold text-sm py-3 rounded-full cursor-not-allowed">
+                <button onClick={convertPoints}
+                  className={`w-full ${isClaimEnabled2
+                    ? "bg-blue-500 text-white cursor-pointer"
+                    : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                    } font-bold text-sm py-3 rounded-full`}
+                  disabled={!isClaimEnabled2}
+                >
                   CLAIM REWARDS
                 </button>
               </div>
