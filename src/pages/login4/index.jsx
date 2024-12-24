@@ -58,7 +58,6 @@ const trees = [
 ];
 
 const Mint = () => {
-  const [googleId, setGoogleId] = useState("");
   const [selectedTree, setSelectedTree] = useState(null);
   const navigate = useNavigate();
   const [token, setToken] = useState("");

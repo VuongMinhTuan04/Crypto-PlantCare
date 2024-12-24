@@ -230,7 +230,6 @@ export const getAllPurchaseByUserId = async (userId) => {
   try {
     const response = await axios.get(
       `${API_URL_BE}/purchase/${userId}`,
-
       {
         headers: {
           Accept: "application/json",
@@ -239,10 +238,6 @@ export const getAllPurchaseByUserId = async (userId) => {
     );
     return response.data;
   } catch (error) {
-    console.error("Error fetching getAllPurchase:", error.message);
-    return {
-      error: true,
-      message: error.response?.data || "Unknown error occurred",
-    };
+    console.log(error)
   }
 };

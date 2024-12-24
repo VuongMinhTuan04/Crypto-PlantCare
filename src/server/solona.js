@@ -1,13 +1,19 @@
-import { clusterApiUrl, Connection, Keypair, PublicKey, SystemProgram, Transaction } from '@solana/web3.js';
-import bodyParser from 'body-parser';
-import cors from 'cors';
-import dotenv from 'dotenv';
-import express from 'express';
+import {
+  clusterApiUrl,
+  Connection,
+  Keypair,
+  PublicKey,
+  SystemProgram,
+  Transaction,
+} from "@solana/web3.js";
+import bodyParser from "body-parser";
+import bs58 from "bs58";
+import cors from "cors";
+import dotenv from "dotenv";
+import express from "express";
 import { OAuth2Client } from "google-auth-library";
-import jwt from 'jsonwebtoken';
-import mongoose from 'mongoose';
-import { clusterApiUrl, Connection, Keypair, PublicKey, SystemProgram, Transaction } from '@solana/web3.js';
-import bs58 from 'bs58';
+import jwt from "jsonwebtoken";
+import mongoose from "mongoose";
 dotenv.config();
 // import Chance from 'chance';
 // const chance = new Chance();
@@ -16,25 +22,24 @@ const CLIENT_ID = process.env.CLIENT_ID;
 const CLIENT_SECRET = process.env.CLIENT_SECRET;
 const client = new OAuth2Client(CLIENT_ID);
 
-
-
 const app = express();
 const port = process.env.PORT || 3000;
 
 // Middleware
 app.use(bodyParser.json());
-app.use(cors({
-  origin: '*',  // Replace with your frontend's URL
-  methods: 'GET,POST,DELETE,PUT',  // Allowed HTTP methods
-  allowedHeaders: 'Content-Type,Authorization'  // Allowed headers
-}));
+app.use(
+  cors({
+    origin: "*", // Replace with your frontend's URL
+    methods: "GET,POST,DELETE,PUT", // Allowed HTTP methods
+    allowedHeaders: "Content-Type,Authorization", // Allowed headers
+  })
+);
 
 // Middleware xác thực token
 const authMiddleware = (req, res, next) => {
   const authHeader = req.headers.authorization;
 
   //console.log(authHeader);
-
 
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
     return res.status(401).json({ message: "Unauthorized" });
@@ -53,15 +58,16 @@ const authMiddleware = (req, res, next) => {
 
 const connectDB = async () => {
   try {
-    await mongoose.connect(process.env.MONGODB_URI
+    await mongoose.connect(
+      process.env.MONGODB_URI
       //, {
       //useNewUrlParser: true,
       //useUnifiedTopology: true,
       //}
     );
-    console.log('✅ Kết nối MongoDB thành công!');
+    console.log("✅ Kết nối MongoDB thành công!");
   } catch (error) {
-    console.error('❌ Lỗi kết nối MongoDB:', error.message);
+    console.error("❌ Lỗi kết nối MongoDB:", error.message);
     process.exit(1);
   }
 };
@@ -79,7 +85,6 @@ app.post("/auth/google", async (req, res) => {
       audience: CLIENT_ID,
     });
 
-
     const payload = ticket.getPayload();
     const { sub, email, name, picture } = payload;
 
@@ -95,20 +100,19 @@ app.post("/auth/google", async (req, res) => {
       const newUser = new User({ sub, email, picture, name });
       await newUser.save(newUser);
       console.log("Tao user moi thanh cong");
-
     } else {
       console.log("Tim thay user tren dtb: ", user);
     }
 
-
-
-    res.json({ token: jwtToken, user: { userId: user._id, sub, email, name, picture } });
+    res.json({
+      token: jwtToken,
+      user: { userId: user._id, sub, email, name, picture },
+    });
   } catch (error) {
     console.error(error);
     res.status(401).send("Invalid token");
   }
 });
-
 
 app.get("/user/detail", authMiddleware, (req, res) => {
   const user = req.user;
@@ -130,7 +134,9 @@ app.get("/test", async (req, res) => {
 
   // Gửi phản hồi về client
   res.send({
-    message: "Check console for Client ID and Client Secret.", CLIENT_ID, CLIENT_SECRET,
+    message: "Check console for Client ID and Client Secret.",
+    CLIENT_ID,
+    CLIENT_SECRET,
     clientId: CLIENT_ID,
     clientSecret: CLIENT_SECRET,
   });
@@ -142,12 +148,12 @@ const userSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true },
   name: { type: String, required: true },
   picture: { type: String, required: true },
-  points: { type: Number, default: 0 }
+  points: { type: Number, default: 0 },
 });
 
-const User = mongoose.model('User', userSchema);
+const User = mongoose.model("User", userSchema);
 
-app.get('/users', async (req, res) => {
+app.get("/users", async (req, res) => {
   const items = await User.find();
   console.log("users:", items);
 
@@ -175,7 +181,7 @@ app.get('/users', async (req, res) => {
 //   res.json(newItem);
 // });
 
-app.post('/get/user/sub', async (req, res) => {
+app.post("/get/user/sub", async (req, res) => {
   const { sub } = req.body; // Lấy sub từ body
 
   if (!sub) {
@@ -195,23 +201,23 @@ app.post('/get/user/sub', async (req, res) => {
   }
 });
 
-
-app.delete('/users/:id', async (req, res) => {
+app.delete("/users/:id", async (req, res) => {
   await User.findByIdAndDelete(req.params.id);
-  res.json({ message: 'users deleted' });
+  res.json({ message: "users deleted" });
 });
 
-app.post('/users', async (req, res) => {
+app.post("/users", async (req, res) => {
   const newItem = new User(req.body);
   await newItem.save();
   res.json(newItem);
 });
 
-app.put('/users/:id', async (req, res) => {
-  const updatedItem = await User.findByIdAndUpdate(req.params.id, req.body, { new: true });
+app.put("/users/:id", async (req, res) => {
+  const updatedItem = await User.findByIdAndUpdate(req.params.id, req.body, {
+    new: true,
+  });
   res.json(updatedItem);
 });
-
 
 const treeSchema = new mongoose.Schema({
   type: { type: String, required: true },
@@ -224,23 +230,25 @@ const treeSchema = new mongoose.Schema({
   status: { type: Boolean, required: true },
 });
 
-const Tree = mongoose.model('Tree', treeSchema);
+const Tree = mongoose.model("Tree", treeSchema);
 
-app.get('/trees', async (req, res) => {
+app.get("/trees", async (req, res) => {
   const items = await Tree.find();
   console.log("Tree:", items);
 
   res.json(items);
 });
 
-app.post('/trees', async (req, res) => {
+app.post("/trees", async (req, res) => {
   const newItem = new Tree(req.body);
   await newItem.save();
   res.json(newItem);
 });
 
-app.put('/trees/:id', async (req, res) => {
-  const updatedItem = await Tree.findByIdAndUpdate(req.params.id, req.body, { new: true });
+app.put("/trees/:id", async (req, res) => {
+  const updatedItem = await Tree.findByIdAndUpdate(req.params.id, req.body, {
+    new: true,
+  });
   res.json(updatedItem);
 });
 
@@ -249,26 +257,28 @@ const itemScheme = new mongoose.Schema({
   name: { type: String, default: 0 },
   icon_img: { type: String, required: true },
   price: { type: String, required: true },
-  time_dele: { type: String, required: true },
+  exp: { type: String, required: true },
 });
 
-const Item = mongoose.model('Item', itemScheme);
+const Item = mongoose.model("Item", itemScheme);
 
-app.get('/items', async (req, res) => {
+app.get("/items", async (req, res) => {
   const items = await Item.find();
   console.log("items:", items);
 
   res.json(items);
 });
 
-app.post('/items', async (req, res) => {
+app.post("/items", async (req, res) => {
   const newItem = new Item(req.body);
   await newItem.save();
   res.json(newItem);
 });
 
-app.put('/items/:id', async (req, res) => {
-  const updatedItem = await Item.findByIdAndUpdate(req.params.id, req.body, { new: true });
+app.put("/items/:id", async (req, res) => {
+  const updatedItem = await Item.findByIdAndUpdate(req.params.id, req.body, {
+    new: true,
+  });
   res.json(updatedItem);
 });
 
@@ -282,33 +292,35 @@ const purchaseSchema = new mongoose.Schema({
   purchaseDate: { type: Date, default: Date.now },
 });
 
-const Purchase = mongoose.model('Purchase', purchaseSchema);
+const Purchase = mongoose.model("Purchase", purchaseSchema);
 
-
-app.get('/purchase', async (req, res) => {
+app.get("/purchase", async (req, res) => {
   const items = await Purchase.find();
   console.log("purchase:", items);
-
   res.json(items);
 });
 
-app.post('/purchase', async (req, res) => {
+app.post("/purchase", async (req, res) => {
   const filter = { itemId: req.body.itemId }; // Điều kiện tìm kiếm
   const update = req.body; // Dữ liệu mới
   const options = { new: true, upsert: true }; // `upsert` sẽ tạo mới nếu không tìm thấy
-  
+
   const updatedItem = await Purchase.findOneAndUpdate(filter, update, options);
   res.json(updatedItem);
 });
 
-
-app.get('/purchase/:userId', async (req, res) => {
+app.get("/purchase/:userId", async (req, res) => {
   try {
     // Tìm tất cả các tài liệu với userId tương ứng
+    if (req.params.userId === null || undefined) {
+      return;
+    }
     const userPurchases = await Purchase.find({ userId: req.params.userId });
 
     if (userPurchases.length === 0) {
-      return res.status(404).json({ message: "No purchases found for this userId" });
+      return res
+        .status(200)
+        .json({ message: "No purchases found for this userId", error: true });
     }
 
     // Ghi log toàn bộ dữ liệu
@@ -318,30 +330,34 @@ app.get('/purchase/:userId', async (req, res) => {
     res.json(userPurchases);
   } catch (error) {
     console.error("Error fetching purchases:", error.message);
-    res.status(500).json({ message: "Error fetching purchases", error: error.message });
+    res
+      .status(500)
+      .json({ message: "Error fetching purchases", error: error.message });
   }
 });
 
-
 // API gửi giao dịch
-app.post('/api/convert-sol', authMiddleware, async (req, res) => {
+app.post("/api/convert-sol", authMiddleware, async (req, res) => {
   const { signature, walletAddress, solAmount } = req.body;
-  const connection = new Connection('https://api.devnet.solana.com', 'confirmed');
+  const connection = new Connection(
+    "https://api.devnet.solana.com",
+    "confirmed"
+  );
   const WALLET_ADDRESS_RECEIVE = "9We7ffkzoKcbNKoG7wU9gBUeN97256jTLtrsdS8eozKB";
   if (!signature || !walletAddress || !solAmount) {
-    return res.status(400).json({ error: 'Invalid parameters.' });
+    return res.status(400).json({ error: "Invalid parameters." });
   }
   const userSub = req.user;
-  if(!userSub.userId){
+  if (!userSub.userId) {
     console.log(userSub);
-    
+
     return res.status(400).json({
       success: false,
-      error: 'User not found'
+      error: "User not found",
     });
   }
   // Tìm người dùng theo ID
-  const updatedItem = await User.findOne({sub : userSub.userId});
+  const updatedItem = await User.findOne({ sub: userSub.userId });
   try {
     // Lấy thông tin giao dịch từ signature
     const transaction = await connection.getTransaction(signature);
@@ -349,7 +365,7 @@ app.post('/api/convert-sol', authMiddleware, async (req, res) => {
     if (!transaction) {
       return res.status(400).json({
         success: false,
-        error: 'Transaction not found'
+        error: "Transaction not found",
       });
     }
 
@@ -358,7 +374,7 @@ app.post('/api/convert-sol', authMiddleware, async (req, res) => {
     if (sender !== walletAddress) {
       return res.status(400).json({
         success: false,
-        error: 'Invalid sender'
+        error: "Invalid sender",
       });
     }
 
@@ -367,18 +383,19 @@ app.post('/api/convert-sol', authMiddleware, async (req, res) => {
     if (receiver !== WALLET_ADDRESS_RECEIVE) {
       return res.status(400).json({
         success: false,
-        error: 'Invalid receiver'
+        error: "Invalid receiver",
       });
     }
 
     // Xác minh số lượng SOL
-    const transferredLamports = transaction.meta.postBalances[1] - transaction.meta.preBalances[1];
+    const transferredLamports =
+      transaction.meta.postBalances[1] - transaction.meta.preBalances[1];
     const transferredSOL = transferredLamports / 1000000000;
 
     if (transferredSOL !== parseFloat(solAmount)) {
       return res.status(400).json({
         success: false,
-        error: 'Invalid amount'
+        error: "Invalid amount",
       });
     }
 
@@ -394,30 +411,28 @@ app.post('/api/convert-sol', authMiddleware, async (req, res) => {
       sol: transferredSOL,
       points: points,
       total: updatedItem.points,
-      message: 'Transaction verified successfully'
+      message: "Transaction verified successfully",
     });
-
   } catch (err) {
     console.error("Error:", err);
     return res.status(500).json({
       success: false,
-      error: 'Internal Server Error',
-      details: err.message
+      error: "Internal Server Error",
+      details: err.message,
     });
-
   }
 });
 
-
-
 // Tạo API để chuyển SOL từ ví người chơi sang ví chính
-app.post('/api/claim-sol', authMiddleware, async (req, res) => {
+app.post("/api/claim-sol", authMiddleware, async (req, res) => {
   const { walletAddressNhan, points } = req.body;
 
   // Kiểm tra thông số đầu vào
   if (!walletAddressNhan || points <= 0) {
     console.log(walletAddressNhan, points);
-    return res.status(400).json({ error: 'Invalid wallet address or points amount.' });
+    return res
+      .status(400)
+      .json({ error: "Invalid wallet address or points amount." });
   }
   const userSub = req.user;
   if (!userSub.userId) {
@@ -429,12 +444,12 @@ app.post('/api/claim-sol', authMiddleware, async (req, res) => {
   const updatedItem = await User.findOne({ sub: userSub.userId });
 
   if (!updatedItem) {
-    return res.status(404).json({ error: 'User not found' });
+    return res.status(404).json({ error: "User not found" });
   }
 
   // Kiểm tra xem người dùng có đủ điểm không
   if (updatedItem.points < points) {
-    return res.status(400).json({ error: 'Not enough points' });
+    return res.status(400).json({ error: "Not enough points" });
   }
 
   // Tính số Solana nhận được từ số điểm
@@ -448,7 +463,9 @@ app.post('/api/claim-sol', authMiddleware, async (req, res) => {
     console.log("Vi nhan: ", walletAddressNhan);
 
     // Địa chỉ ví người chơi và ví chính (ví 2)
-    const senderPublicKey = new PublicKey("9We7ffkzoKcbNKoG7wU9gBUeN97256jTLtrsdS8eozKB");
+    const senderPublicKey = new PublicKey(
+      "9We7ffkzoKcbNKoG7wU9gBUeN97256jTLtrsdS8eozKB"
+    );
     const receiverPublicKey = new PublicKey(walletAddressNhan); // Ví chính (người nhận)
 
     // Lấy blockhash gần nhất
@@ -468,17 +485,20 @@ app.post('/api/claim-sol', authMiddleware, async (req, res) => {
 
     // Ký và gửi giao dịch
 
-    const base58PrivateKey = '4AxXEWC73yQeoBjNoZ4sW5V5S7YU3mUs7iXo88b9AnRBpwy2s7NHzeSkG85ewF4gvojaaNWXsvQP4hkQjHKobigy';
+    const base58PrivateKey =
+      "4AxXEWC73yQeoBjNoZ4sW5V5S7YU3mUs7iXo88b9AnRBpwy2s7NHzeSkG85ewF4gvojaaNWXsvQP4hkQjHKobigy";
     const secretKey = bs58.decode(base58PrivateKey); // Decode to Uint8Array
 
     if (secretKey.length !== 64) {
-      throw new Error('Invalid secret key size');
+      throw new Error("Invalid secret key size");
     }
 
     const senderKeypair = Keypair.fromSecretKey(secretKey);
 
     // Gửi giao dịch
-    const signature = await connection.sendTransaction(transaction, [senderKeypair]);
+    const signature = await connection.sendTransaction(transaction, [
+      senderKeypair,
+    ]);
     console.log("Transaction signature: ", signature);
 
     // Lưu lại thông tin đã cập nhật (số điểm đã giảm)
@@ -486,13 +506,15 @@ app.post('/api/claim-sol', authMiddleware, async (req, res) => {
 
     // Trả về kết quả
     return res.json({
-      message: 'Transaction successful',
+      message: "Transaction successful",
       solToReceive: solToReceive,
       points: updatedItem.points,
     });
   } catch (err) {
     console.error("Transaction failed:", err);
-    return res.status(500).json({ error: 'Transaction failed', details: err.message });
+    return res
+      .status(500)
+      .json({ error: "Transaction failed", details: err.message });
   }
 });
 
