@@ -8,40 +8,61 @@ import { useEffect, useState } from "react";
 const ItemShopModal = ({ show, onClose, onWateringCanUse }) => {
   const [selectedItem, setSelectedItem] = useState(null);
   const [showNotification, setShowNotification] = useState(false);
+  const [notificationMessage, setNotificationMessage] = useState("");
   const [shopItems, setShopItems] = useState([]);
   const [user, setUser] = useState(null);
-  const [userInventory, setUserInventory] = useState([]);
 
-  // Fixed items that should always appear first
-  const FIXED_ITEMS = [
+  const WATERING_CAN = {
+    id: 1,
+    image: "/assets/images/water-drops.png",
+    name: "Watering Can",
+    backgroundImage: "/assets/images/Ellipse-50.png",
+    icon: "/assets/images/watering-can.png",
+    quantity: 1,
+  };
+
+  const FERTILIZER = [
     {
-      id: 1,
-      image: "/assets/images/water-drops.png",
-      name: "Watering Can",
+      id: 2,
+      image: "/assets/images/fertilizer-3.png",
+      name: "Normal Fertilizer",
       backgroundImage: "/assets/images/Ellipse-50.png",
-      icon: "/assets/images/watering-can.png",
+      icon: "/assets/images/fertilizer-3.png",
+      quantity: 0,
+    },
+    {
+      id: 3,
+      image: "/assets/images/fertilizer.png",
+      name: "Super Fertilizer",
+      backgroundImage: "/assets/images/Ellipse-50.png",
+      icon: "/assets/images/fertilizer.png",
+      quantity: 0,
+    },
+    {
+      id: 4,
+      image: "/assets/images/water-drops.png",
+      name: "VIP Fertilizer",
+      backgroundImage: "/assets/images/Ellipse-50.png",
+      icon: "/assets/images/fertilizer-2.png",
       quantity: 0,
     },
   ];
 
   const transformApiData = (apiItems, userPurchases) => {
-    return apiItems.map((item, index) => {
-      // Find the user's purchase quantity for this item
-
+    return apiItems.map((item) => {
       const userPurchase = userPurchases.find(
         (purchase) => purchase.itemId === item._id
       );
-    console.log(userPurchase)
 
       return {
-        id: item._id, // Start from id 2 since id 1 is reserved for Watering Can
+        id: item._id,
         image: getImageForItem(item.name),
         name: item.name,
         backgroundImage: "/assets/images/Ellipse-50.png",
         icon: item.icon_img,
         quantity: userPurchase ? userPurchase.quantity : 0,
         time_dele: item.time_dele,
-        itemId: item.id, // Keep the original item ID for reference
+        itemId: item.id,
       };
     });
   };
@@ -49,19 +70,15 @@ const ItemShopModal = ({ show, onClose, onWateringCanUse }) => {
   const getImageForItem = (name) => {
     const imageMap = {
       "Normal Fertilizer": "/assets/images/box.png",
-      "SuperFertilizer": "/assets/images/scale.png",
+      SuperFertilizer: "/assets/images/scale.png",
       "VIP Fertilizer": "/assets/images/scale.png",
     };
     return imageMap[name] || "/assets/images/box.png";
   };
 
   useEffect(() => {
-    const initializeData = async () => {
-      await loadUser();
-    };
-    
     if (show) {
-      initializeData();
+      loadUser();
     }
   }, [show]);
 
@@ -88,14 +105,20 @@ const ItemShopModal = ({ show, onClose, onWateringCanUse }) => {
     try {
       const [itemsResponse, purchasesResponse] = await Promise.all([
         getAllItems(),
-        getAllPurchaseByUserId(user.userId)
+        getAllPurchaseByUserId(user.userId),
       ]);
 
-      
-      setUserInventory(purchasesResponse);
-      const transformedItems = transformApiData(itemsResponse, purchasesResponse);
-      
-      setShopItems([...FIXED_ITEMS, ...transformedItems]);
+      if (purchasesResponse.error) {
+        setShopItems([WATERING_CAN, ...FERTILIZER]);
+        return;
+      }
+
+      const transformedItems = transformApiData(
+        itemsResponse,
+        purchasesResponse
+      );
+
+      setShopItems([WATERING_CAN, ...transformedItems]);
     } catch (error) {
       console.error("Failed to load items:", error);
     }
@@ -103,41 +126,45 @@ const ItemShopModal = ({ show, onClose, onWateringCanUse }) => {
 
   const handleItemClick = (item) => {
     setSelectedItem(item);
+    if (item.name !== "Watering Can" && item.quantity <= 0) {
+      showNotificationWithMessage("Bạn cần phải mua mới được dùng");
+    }
+  };
+
+  const showNotificationWithMessage = (message) => {
+    setNotificationMessage(message);
+    setShowNotification(true);
+    setTimeout(() => setShowNotification(false), 2000);
   };
 
   const handleUseClick = async () => {
     if (!selectedItem) return;
 
-    if (selectedItem.quantity <= 0) {
-      // Show error notification that item is not available
-      setShowNotification(true);
-      setTimeout(() => setShowNotification(false), 1000);
+    if (selectedItem.name === "Watering Can") {
+      const canUseWater = onWateringCanUse();
+      if (canUseWater) {
+        showNotificationWithMessage("Watering successful!");
+      }
       return;
     }
 
-    if (selectedItem.name === "Watering Can") {
-      const canUseWater = onWateringCanUse();
-      if (!canUseWater) return;
+    if (selectedItem.quantity <= 0) {
+      showNotificationWithMessage("Bạn cần phải mua mới được dùng");
+      return;
     }
 
     try {
-      // Here you can add API call to use the item
-      // await useItem(selectedItem.itemId, user.userId);
-      
-      // Update local state to reflect item usage
-      setShopItems(prevItems => 
-        prevItems.map(item => 
-          item.id === selectedItem.id 
+      setShopItems((prevItems) =>
+        prevItems.map((item) =>
+          item.id === selectedItem.id
             ? { ...item, quantity: item.quantity - 1 }
             : item
         )
       );
-
-      // Show success notification
-      setShowNotification(true);
-      setTimeout(() => setShowNotification(false), 1000);
+      showNotificationWithMessage("Item used successfully!");
     } catch (error) {
       console.error("Failed to use item:", error);
+      showNotificationWithMessage("Failed to use item");
     }
   };
 
@@ -145,6 +172,7 @@ const ItemShopModal = ({ show, onClose, onWateringCanUse }) => {
 
   return (
     <div className="inset-0 flex">
+      {console.log(shopItems)}
       <div className="bg-green-400 rounded-lg shadow-lg p-1 w-full max-w-[280px] text-black">
         <div className="grid grid-cols-4">
           {shopItems.map((item) => (
@@ -154,7 +182,6 @@ const ItemShopModal = ({ show, onClose, onWateringCanUse }) => {
               className={`rounded-lg p-2 transition-colors ${
                 selectedItem?.id === item.id ? "bg-green-200" : ""
               }`}
-              disabled={item.quantity <= 0}
             >
               <div className="relative w-12 h-12">
                 <div className="absolute left-0 w-full h-full">
@@ -171,7 +198,7 @@ const ItemShopModal = ({ show, onClose, onWateringCanUse }) => {
                     className="w-full h-full object-contain"
                   />
                 </div>
-                {item.quantity > 0 && (
+                {item.name !== "Watering Can" && item.quantity >= 0 && (
                   <span className="absolute text-white font-bold bg-green-500 rounded-full w-5 h-5 -top-2 -right-0 text-center text-[12px]">
                     x{item.quantity}
                   </span>
@@ -184,25 +211,31 @@ const ItemShopModal = ({ show, onClose, onWateringCanUse }) => {
           <div className="mt-4 p-4 bg-gray-100 rounded-lg">
             <h3 className="text-md font-bold">{selectedItem.name}</h3>
             <p className="text-gray-600 text-sm">
-              This is a description of the {selectedItem.name}.
+              {selectedItem.name === "Watering Can"
+                ? "Use to water your tree and start growing process"
+                : `This is a description of the ${selectedItem.name}.`}
             </p>
             <button
               onClick={handleUseClick}
               className={`w-full font-bold py-2 px-4 rounded mt-4 ${
+                selectedItem.name === "Watering Can" ||
                 selectedItem.quantity > 0
                   ? "bg-green-500 hover:bg-green-600 text-white"
                   : "bg-gray-400 cursor-not-allowed text-gray-200"
               }`}
-              disabled={selectedItem.quantity <= 0}
+              disabled={
+                selectedItem.name !== "Watering Can" &&
+                selectedItem.quantity <= 0
+              }
             >
-              {selectedItem.quantity > 0 ? "USE" : "OUT OF STOCK"}
+              USE
             </button>
           </div>
         )}
-        
+
         {showNotification && (
-          <div className="fixed top-4 right-4 bg-green-500 text-white p-4 rounded shadow">
-            {selectedItem.quantity > 0 ? "Item used successfully!" : "Item not available"}
+          <div className="fixed top-4 right-1/2 translate-x-1/2 bg-green-500 text-white p-4 rounded shadow z-50">
+            {notificationMessage}
           </div>
         )}
       </div>

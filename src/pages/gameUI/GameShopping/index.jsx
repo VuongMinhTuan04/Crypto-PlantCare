@@ -12,7 +12,7 @@ const ITEM_CONFIGS = {
   ],
   positions: {
     "Normal Fertilizer": "-top-2 -left-[5px]",
-    "SuperFertilizer": "-top-2 -left-[4px]",
+    "Super Fertilizer": "-top-2 -left-[4px]",
     "VIP Fertilizer": "-top-2 -left-[4px]",
   }
 };
