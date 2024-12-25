@@ -1,4 +1,4 @@
-import { getAllItems } from "@/utils/authServices";
+import { buyItemByUser, getAllItems, getUserInfo } from "@/utils/authServices";
 import { ArrowLeftCircleIcon } from "@heroicons/react/24/solid";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -26,6 +26,7 @@ const transformApiData = (apiItems) => {
     ITEM_CONFIGS.quantities.forEach(({ quantity, price }) => {
       transformedItems.push({
         id: currentId++,
+        itemId: apiItem._id,
         name: apiItem.name,
         icon: apiItem.icon_img,
         price: Number(apiItem.price) * quantity, // Multiply base price by quantity multiplier
@@ -100,8 +101,29 @@ const ShopPage = () => {
   const [shopItems, setShopItems] = useState([]);
 
   const navigate = useNavigate();
-  const userBalance = 20;
+  const [userBalance, setUserBalance] = useState("");
   const [activeItemId, setActiveItemId] = useState(null);
+
+  useEffect(() => {
+    const fetchUserInfo = async () => {
+      try {
+        const token = JSON.parse(localStorage.getItem("tokenGoogle"));
+        if (!token) {
+          console.error("No token found in localStorage.");
+          return;
+        }
+
+        const res = await getUserInfo(token);
+        //setUserBalance(res); // Lưu thông tin user vào state
+        setUserBalance(res.points);
+        //console.log("User Info:", res);
+      } catch (error) {
+        console.error("Error fetching user info:", error);
+      }
+    };
+
+    fetchUserInfo();
+  }, [userBalance]);
 
   const handleItemClick = (itemId) => {
     setActiveItemId(itemId === activeItemId ? null : itemId);
@@ -123,15 +145,27 @@ const ShopPage = () => {
 
 
   
-  const handleBuy = () => {
+  const handleBuy = async () => {
     const selectedItem = shopItems.find((item) => item.id === activeItemId);
     if (selectedItem) {
-      console.log("Buying item:", {
-        id: selectedItem.id,
-        name: selectedItem.name,
-        price: selectedItem.price,
-        quantity: selectedItem.quantity,
-      });
+      //console.log(selectedItem);
+      
+      // console.log("Buying item:", {
+      //   id: selectedItem.id,
+      //   name: selectedItem.name,
+      //   price: selectedItem.price,
+      //   quantity: selectedItem.quantity,
+      //   itemId: selectedItem.itemId,
+      // });
+
+      const token = JSON.parse(localStorage.getItem("tokenGoogle"));
+      //console.log("token: ",token);
+      
+
+      const response = await buyItemByUser(token,selectedItem.itemId,selectedItem.quantity );
+      //console.log(response);
+      setUserBalance("...");
+
     } else {
       console.log("Please select an item to buy");
     }

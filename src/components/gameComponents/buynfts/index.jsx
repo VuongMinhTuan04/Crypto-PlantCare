@@ -50,22 +50,29 @@ const ItemShopModal = ({ show, onClose, onWateringCanUse }) => {
 
   const transformApiData = (apiItems, userPurchases) => {
     return apiItems.map((item) => {
-      const userPurchase = userPurchases.find(
+      // Lọc các giao dịch liên quan đến item hiện tại
+      const purchasesForItem = userPurchases.filter(
         (purchase) => purchase.itemId === item._id
       );
-
+  
+      // Tính tổng quantity cho item hiện tại
+      const totalQuantity = purchasesForItem.reduce(
+        (sum, purchase) => sum + purchase.totalPurchased,
+        0
+      );
+  
       return {
-        id: item._id,
+        id: item.itemId,
         image: getImageForItem(item.name),
         name: item.name,
         backgroundImage: "/assets/images/Ellipse-50.png",
         icon: item.icon_img,
-        quantity: userPurchase ? userPurchase.quantity : 0,
-        time_dele: item.time_dele,
-        itemId: item.id,
+        quantity: totalQuantity,
+        itemId: item.itemId,
       };
     });
   };
+  
 
   const getImageForItem = (name) => {
     const imageMap = {
@@ -103,11 +110,20 @@ const ItemShopModal = ({ show, onClose, onWateringCanUse }) => {
 
   const loadItems = async () => {
     try {
+      const token = JSON.parse(localStorage.getItem("tokenGoogle"));
+      if(!token){
+        console.log("No token");
+        
+        return;
+      }
       const [itemsResponse, purchasesResponse] = await Promise.all([
         getAllItems(),
-        getAllPurchaseByUserId(user.userId),
+        getAllPurchaseByUserId(token),
       ]);
 
+      //console.log(purchasesResponse);
+      
+      
       if (purchasesResponse.error) {
         setShopItems([WATERING_CAN, ...FERTILIZER]);
         return;
@@ -115,8 +131,11 @@ const ItemShopModal = ({ show, onClose, onWateringCanUse }) => {
 
       const transformedItems = transformApiData(
         itemsResponse,
-        purchasesResponse
+        purchasesResponse.summary
       );
+
+      //console.log("transformedItems: ",transformedItems);
+      
 
       setShopItems([WATERING_CAN, ...transformedItems]);
     } catch (error) {
