@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const API_KEY = import.meta.env.VITE_GAMESHIFT_API_KEY;
-const API_URL_BE = "http://localhost:3000"
+const API_URL_BE = "http://localhost:3000";
 // Tạo NFTs
 export const createUser = async (referenceId, email, externalWalletAddress) => {
   try {
@@ -39,7 +39,6 @@ export const userDetailGoogle = async (token) => {
     };
   }
 };
-
 
 export const userDetail = async (userId) => {
   try {
@@ -136,7 +135,6 @@ export const changeSOLToUSDC = async (userId, quantity, destinationWallet) => {
   }
 };
 
-
 export const getUserBySub = async (sub) => {
   try {
     const response = await axios.post(
@@ -147,7 +145,7 @@ export const getUserBySub = async (sub) => {
           Accept: "application/json",
           "Content-Type": "application/json",
         },
-      },
+      }
     );
     return response.data;
   } catch (error) {
@@ -158,9 +156,31 @@ export const getUserBySub = async (sub) => {
     };
   }
 };
+export const getUserByToken = async (token) => {
+  try {
+    const response = await axios.post(
+      `${API_URL_BE}/usersbytoken`,
+      { token },
+      {
+        headers: {
+          Accept: "application/json",
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+    return response.data;
+  } catch (error) {
+    return error
+  }
+};
 
-
-export const converSolToPoints = async (signature, walletAddress, solAmount, token) => {
+export const converSolToPoints = async (
+  signature,
+  walletAddress,
+  solAmount,
+  token
+) => {
   try {
     const response = await axios.post(
       "http://localhost:3000/api/convert-sol",
@@ -214,7 +234,7 @@ export const getAllItems = async () => {
         headers: {
           Accept: "application/json",
         },
-      },
+      }
     );
     return response.data;
   } catch (error) {
@@ -241,6 +261,82 @@ export const getAllPurchaseByUserId = async (token) => {
     return response.data;
   } catch (error) {
     console.log(error)
+  }
+};
+export const getUserTreeByUser = async (token) => {
+  try {
+    const response = await axios.post(
+      `${API_URL_BE}/api/user-trees-by-token`,
+      { token },
+      {
+        headers: {
+          Accept: "application/json",
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+    return response.data;
+  } catch (error) {
+    return error;
+  }
+};
+export const saveUserTree = async (details) => {
+  try {
+    const response = await axios.post(`${API_URL_BE}/api/user-trees`, details, {
+      headers: {
+        Accept: "application/json",
+      },
+    });
+    return response.data;
+  } catch (error) {
+    return error;
+  }
+};
+export const setTimeCountDown = async (token, watering) => {
+  try {
+    const response = await axios.post(
+      `${API_URL_BE}/api/user-trees/watering`,
+      { token, watering },
+
+      {
+        headers: {
+          Accept: "application/json",
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+    return response.data;
+  } catch (error) {
+    return error;
+  }
+};
+export const getAllTrees = async () => {
+  try {
+    const response = await axios.get(`${API_URL_BE}/trees`, {
+      headers: {
+        Accept: "application/json",
+      },
+    });
+    return response.data;
+  } catch (error) {
+    return error;
+  }
+};
+export const getTreeByUser = async (userId) => {
+  try {
+    const response = await axios.get(
+      `${API_URL_BE}/api/trees-by-user/${userId}`,
+      {
+        headers: {
+          Accept: "application/json",
+        },
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.log(error);
   }
 };
 

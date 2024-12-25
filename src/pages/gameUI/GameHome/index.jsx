@@ -1,9 +1,10 @@
 import ItemShopModal from "@/components/gameComponents/buynfts";
 import CountdownToHarvest from "@/components/growthTimer";
 import {
-  getUserBySub,
-  userDetail,
-  userDetailGoogle,
+  getTreeByUser,
+  getUserByToken,
+  getUserTreeByUser,
+  setTimeCountDown
 } from "@/utils/authServices";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -14,95 +15,90 @@ function GameHome() {
   const [NFTs, setNFTs] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [user, setUser] = useState(null);
-  const [treeAsset, setTreeAsset] = useState(null);
+  const [treeAsset, setTreeAsset] = useState([]);
   const [isFruitReady, setIsFruitReady] = useState(false);
   const [isCountdownActive, setIsCountdownActive] = useState(false);
+  const [userTree, setUserTree] = useState(null);
   const [currencies, setCurrencies] = useState({
     PTC: 0,
-    SOL: 0
+    SOL: 0,
   });
 
   useEffect(() => {
-    const fetchUserData = async () => {
+    const tokenGoogle = localStorage.getItem("tokenGoogle");
+    if (tokenGoogle) {
       try {
-        const tokenGoogle = localStorage.getItem("tokenGoogle");
-        if (!tokenGoogle) return;
-
         const parsedToken = JSON.parse(tokenGoogle);
-        const userResp = await userDetailGoogle(parsedToken);
-        setUser(userResp.user);
-
-        if (!userResp.user?.userId) return;
-
-        // Fetch NFTs and user points
-        const [nftResp, userResp2] = await Promise.all([
-          userDetail(userResp.user.userId),
-          getUserBySub(userResp.user.userId)
-        ]);
-
-        const fetchedNFTs = nftResp.data || [];
-        setNFTs(fetchedNFTs);
-
-        // Update currencies
-        setCurrencies({
-          PTC: userResp2.points || 0,
-          SOL: fetchedNFTs.find(nft => nft.type === "Currency" && nft.item.id === "SOL")?.quantity || 0
-        });
-
-        // Set tree asset
-        const treeTypes = ["Green Giant Tree", "Golden Giant Tree", "Purple Giant Tree"];
-        const availableTree = fetchedNFTs.find(
-          nft => nft.type === "UniqueAsset" && treeTypes.includes(nft.item?.name)
-        );
-        if (availableTree) setTreeAsset(availableTree);
-
+        const loadUserData = async () => {
+          try {
+            const resp = await getUserByToken(parsedToken);
+            console.log(resp)
+            setUser(resp);
+          } catch (error) {
+            console.error("Failed to fetch user details:", error);
+          }
+        };
+        loadUserData();
       } catch (error) {
-        console.error("Failed to fetch user data:", error);
-      } finally {
-        setIsLoading(false);
+        console.error("Invalid token format:", error);
       }
-    };
-
-    fetchUserData();
-    checkExistingCountdown();
+    }
   }, []);
 
-  const checkExistingCountdown = () => {
-    const storedHarvestTime = localStorage.getItem("harvest-time");
-    if (storedHarvestTime) {
+  useEffect(() => {
+    const token = JSON.parse(localStorage.getItem("tokenGoogle"));
+    const loadTreeByUser = async () => {
+      try {
+        if (user?.sub) {
+          const resp = await getTreeByUser(user.sub);
+          setTreeAsset(resp);
+        }
+      } catch (error) {
+        console.log(error);
+      }
+    };
+    const loadUserTreeByToken = async () => {
+      try {
+        const resp = await getUserTreeByUser(token);
+        setUserTree(resp);
+      } catch (error) {
+        console.log(error);
+      }
+    };
+    loadTreeByUser();
+    loadUserTreeByToken();
+  }, [user?.sub]);
+
+  useEffect(() => {
+    if (userTree?.time_countdown) {
+      const storedHarvestTime = localStorage.getItem("harvest-time");
       const currentTime = Date.now();
-      const harvestTime = parseInt(storedHarvestTime) + 5 * 60 * 60 * 1000;
+      const harvestTime =
+        parseInt(storedHarvestTime) + parseInt(userTree.time_countdown);
       if (currentTime < harvestTime) {
         setIsCountdownActive(true);
       }
     }
-  };
+  }, [userTree]);
 
-  // Rest of the component remains the same
   const handleBasketClick = () => {
     navigate("/game-shopping");
   };
 
   const handleShovelClick = () => {
-    setShovelClicked(prev => !prev);
+    setShovelClicked((prev) => !prev);
   };
 
-  const handleWateringCanUse = () => {
-    const storedHarvestTime = localStorage.getItem("harvest-time");
-    if (storedHarvestTime) {
-      const currentTime = Date.now();
-      const harvestTime = parseInt(storedHarvestTime) + 5 * 60 * 60 * 1000;
-
-      if (currentTime < harvestTime) {
-        alert("Bạn đã tưới nước rồi! Hãy đợi đến khi cây ra quả.");
-        return false;
+  const handleWateringCanUse = async () => {
+    const token = JSON.parse(localStorage.getItem("tokenGoogle"));
+    try {
+      if (user?.userId) {
+        const resp = await setTimeCountDown(token, true);
+        console.log(resp);
       }
+    } catch (error) {
+      console.log(error);
     }
-
-    setIsCountdownActive(true);
-    const currentTime = Date.now();
-    localStorage.setItem("harvest-time", currentTime.toString());
-    return true;
   };
 
   const handleComplete = () => {
@@ -114,14 +110,6 @@ function GameHome() {
     alert("Cây đã ra quả! Đã đến lúc thu hoạch.");
     setIsCountdownActive(false);
   };
-
-  if (isLoading) {
-    return (
-      <div className="flex justify-center items-center h-full">
-        <div className="loader ease-linear rounded-full border-4 border-t-4 border-gray-200 h-12 w-12"></div>
-      </div>
-    );
-  }
 
   return (
     <div className="relative w-full h-full">
@@ -139,16 +127,6 @@ function GameHome() {
 
       {/* SOL và SAO */}
       <div className="flex">
-        <div className="w-20 h-8 bg-gray-200 absolute top-14 right-28 flex items-center rounded-full">
-          <img
-            className="w-8 h-8 z-10 bg-white px-1 py-1 rounded-full"
-            src="/assets/images/solana-icon.png"
-            alt="currency-icon"
-          />
-          <span className="text-black z-20 font-montserrat font-bold text-center w-12 text-[12px] rounded-xl">
-            {currencies.SOL}
-          </span>
-        </div>
         <div className="w-20 h-8 bg-gray-200 absolute top-14 right-5 flex items-center rounded-full">
           <img
             className="w-8 h-8 z-10 bg-white px-1 py-1 rounded-full"
@@ -156,7 +134,7 @@ function GameHome() {
             alt="currency-icon"
           />
           <span className="text-black z-20 font-montserrat font-bold text-center w-12 text-[12px] rounded-xl">
-            {currencies.PTC}
+            {user?.points}
           </span>
         </div>
       </div>
@@ -164,19 +142,17 @@ function GameHome() {
       {/* Tree Image */}
       <div className="absolute top-2/4 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full max-w-[400px] flex items-center justify-center">
         <img
-          src={treeAsset?.item?.imageUrl || ""}
+          src={treeAsset?.imageUrl || ""}
           alt="tree-image"
           className="max-w-full h-auto object-contain"
         />
       </div>
-
-      {isCountdownActive && (
+      {userTree?.time_countdown && (
         <CountdownToHarvest
-          harvestDurationHours={5}
+          time_countdown={userTree.time_countdown}
           onComplete={handleHarvestComplete}
         />
       )}
-
       {/* Basket Button */}
       <div className="relative top-20">
         <button

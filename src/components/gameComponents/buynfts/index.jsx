@@ -191,7 +191,6 @@ const ItemShopModal = ({ show, onClose, onWateringCanUse }) => {
 
   return (
     <div className="inset-0 flex">
-  
       <div className="bg-green-400 rounded-lg shadow-lg p-1 w-full max-w-[280px] text-black">
         <div className="grid grid-cols-4">
           {shopItems.map((item) => (
