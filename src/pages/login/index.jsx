@@ -23,11 +23,11 @@ const LoginPage = () => {
         console.log(data);
         //localStorage.setItem("userId", JSON.stringify(data.user.userId));
         localStorage.setItem("tokenGoogle", JSON.stringify(data.token));
-        //      createUserToGameShift(data.user.sub, data.user.email);
+          createUserToGameShift(data.user.sub, data.user.email);
       })
       .catch((err) => console.error(err));
     setIsLoginSuccessOpen(true);
-    navigate("/game-login/solana");
+    navigate("/game-login/waitinggame");
   }, []);
 
   const createUserToGameShift = async (referenceId, email) => {

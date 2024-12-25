@@ -28,7 +28,7 @@ const transformApiData = (apiItems) => {
         id: currentId++,
         name: apiItem.name,
         icon: apiItem.icon_img,
-        price: Number(apiItem.price) * price, // Multiply base price by quantity multiplier
+        price: Number(apiItem.price) * quantity, // Multiply base price by quantity multiplier
         background: "/assets/images/Ellipse-50.png",
         available: true,
         quantity: quantity,

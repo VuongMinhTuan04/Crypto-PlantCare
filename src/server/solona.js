@@ -153,12 +153,23 @@ const userSchema = new mongoose.Schema({
 
 const User = mongoose.model("User", userSchema);
 
-app.get("/users", async (req, res) => {
-  const items = await User.find();
-  console.log("users:", items);
+app.post("/usersbytoken", authMiddleware, async (req, res) => {
+  const user = req.user;  // Lấy thông tin người dùng từ middleware
+  try {
+    // Tìm người dùng theo sub (unique identifier của người dùng)
+    const userItem = await User.findOne({ sub: user.userId });
 
-  res.json(items);
+    if (!userItem) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.json(userItem);  // Trả về thông tin người dùng
+  } catch (error) {
+    console.error("Error fetching user:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
 });
+
 
 // app.post('/items', async (req, res) => {
 //   // Tạo tên ngẫu nhiên
@@ -219,15 +230,12 @@ app.put("/users/:id", async (req, res) => {
   res.json(updatedItem);
 });
 
+// TreeSchema
 const treeSchema = new mongoose.Schema({
   type: { type: String, required: true },
-  userId: { type: String, required: true },
   name: { type: String, required: true },
   imageUrl: { type: String, required: true },
   description: { type: String, required: true },
-  time: { type: String, required: true },
-  points: { type: String, required: true },
-  status: { type: Boolean, required: true },
 });
 
 const Tree = mongoose.model("Tree", treeSchema);
@@ -251,7 +259,7 @@ app.put("/trees/:id", async (req, res) => {
   });
   res.json(updatedItem);
 });
-
+//ItemScheme
 const itemScheme = new mongoose.Schema({
   type: { type: String, required: true },
   name: { type: String, default: 0 },
@@ -281,7 +289,7 @@ app.put("/items/:id", async (req, res) => {
   });
   res.json(updatedItem);
 });
-
+//purchaseSchema
 const purchaseSchema = new mongoose.Schema({
   userId: { type: String, required: true },
   itemId: { type: String, required: true },
@@ -333,6 +341,137 @@ app.get("/purchase/:userId", async (req, res) => {
     res
       .status(500)
       .json({ message: "Error fetching purchases", error: error.message });
+  }
+});
+
+//User_Tree
+const userTreeSchema = mongoose.Schema(
+  {
+    userId: { type: String, required: true },
+    treeId: { type: String, required: true },
+    point: { type: String, required: true },
+    watering: { type: Boolean, required: true },
+    exp: { type: String, required: false },
+    level: { type: String, required: true },
+    time_countdown: { type: String, required: false },
+  },
+  { collection: "user_tree" }
+);
+
+const UserTree = mongoose.model("UserTree", userTreeSchema);
+
+app.post("/api/user-trees-by-token", authMiddleware, async (req, res) => {
+  const user = req.user;
+
+  try {
+    const userTree = await UserTree.findOne({ userId: user.userId });
+
+    if (!userTree) {
+      return res.status(404).json({ message: "User tree not found" });
+    }
+
+    res.status(200).json(userTree);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Error retrieving user tree", error });
+  }
+});
+
+// GET all user trees
+app.get("/api/user-trees", async (req, res) => {
+  try {
+    const userTrees = await UserTree.find();
+    console.log(userTrees);
+    res.status(200).json(userTrees);
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching user trees", error });
+  }
+});
+
+//Save UserTree
+app.post("/api/user-trees", async (req, res) => {
+  const {
+    userId,
+    treeId,
+    point,
+    watering,
+    exp = 0,
+    level,
+    time_countdown = 0,
+  } = req.body;
+
+  console.log(userId, treeId, point, watering, exp, level, time_countdown);
+  if (!userId || !treeId || !point || watering === undefined || !level) {
+    return res.status(400).json({ message: "All fields are required" });
+  }
+
+  const userTree = new UserTree({
+    userId,
+    treeId,
+    point,
+    watering,
+    exp,
+    level,
+    time_countdown,
+  });
+
+  try {
+    const savedUserTree = await userTree.save();
+    res.status(201).json(savedUserTree);
+  } catch (error) {
+    res.status(500).json({ message: "Error creating user tree", error });
+  }
+});
+
+app.get("/api/trees-by-user/:userId", async (req, res) => {
+  const { userId } = req.params;
+
+  try {
+    const userTree = await UserTree.findOne({ userId }).select("treeId");
+    if (!userTree) {
+      return res.status(404).json({ message: "No tree found for this user." });
+    }
+    const tree = await Tree.findById(userTree.treeId);
+    if (!tree) {
+      return res.status(404).json({ message: "No tree data found." });
+    }
+    res.status(200).json(tree);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Error fetching tree for user.", error });
+  }
+});
+
+// PUT update watering and time_countdown for a user tree by ID
+app.post("/api/user-trees/watering", authMiddleware, async (req, res) => {
+  const user = req.user;
+  const { watering } = req.body;
+
+  try {
+    const currentTime = new Date();
+    currentTime.setHours(currentTime.getHours() + 5);
+
+    const updatedTimeCountdown = currentTime.toISOString();
+    console.log(user, watering, updatedTimeCountdown);
+
+    const updatedUserTree = await UserTree.findOneAndUpdate(
+      { userId: user.userId },
+      {
+        watering,
+        time_countdown: updatedTimeCountdown,
+      },
+      { new: true, runValidators: true }
+    );
+
+    if (!updatedUserTree) {
+      return res
+        .status(404)
+        .json({ message: "User tree not found", error: true });
+    }
+
+    res.status(200).json({ message: "Tưới nước thành công" });
+  } catch (error) {
+    res.status(500).json({ message: "Error updating user tree", error });
   }
 });
 

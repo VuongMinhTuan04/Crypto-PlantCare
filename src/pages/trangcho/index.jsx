@@ -1,6 +1,6 @@
 import Loading from "@/components/loading";
 import TransitionWrapper from "@/components/motion";
-import { userDetail, userDetailGoogle } from "@/utils/authServices";
+import { getUserTreeByUser, userDetailGoogle } from "@/utils/authServices";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -11,6 +11,7 @@ const GameWaitingPage = () => {
   const [NFTs, setNFTs] = useState([]);
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [userTree, setUserTree] = useState([]);
 
   // Fetch user details from Google
   useEffect(() => {
@@ -26,35 +27,52 @@ const GameWaitingPage = () => {
         }
       } catch (error) {
         console.error("Failed to fetch user details:", error);
-        // Xử lý lỗi, ví dụ chuyển hướng đến trang đăng nhập
         navigate("/game-login");
       }
     };
-
     fetchGoogleUserDetails();
   }, [navigate]);
 
-  // Fetch user NFTs when user is available
   useEffect(() => {
-    const fetchUserNFTs = async () => {
-      if (user?.userId) {
-        try {
-          setIsLoading(true);
-          const resp = await userDetail(user.userId);
-          console.log(resp);
-          setNFTs(resp.data || []);
-        } catch (error) {
-          console.error("Failed to fetch user NFTs:", error);
-          // Xử lý lỗi, có thể hiển thị thông báo cho người dùng
-          setNFTs([]);
-        } finally {
-          setIsLoading(false);
+    const loadUserTree = async () => {
+      try {
+        if (user?.userId) {
+          const resp = await getUserTreeByUser(user.userId);
+          if (resp.message === "User tree not found") {
+            setUserTree(null);
+            return;
+          }
+          setUserTree(resp);
         }
+      } catch (error) {
+        console.log(error);
       }
     };
+    loadUserTree();
+  }, [user?.userId]);
 
-    fetchUserNFTs();
-  }, [user]);
+  // Fetch UserTree
+
+  // Fetch user NFTs when user is available
+  // useEffect(() => {
+  //   const fetchUserNFTs = async () => {
+  //     if (user?.userId) {
+  //       try {
+  //         setIsLoading(true);
+  //         const resp = await userDetail(user.userId);
+  //         setNFTs(resp.data || []);
+  //       } catch (error) {
+  //         console.error("Failed to fetch user NFTs:", error);
+  //         // Xử lý lỗi, có thể hiển thị thông báo cho người dùng
+  //         setNFTs([]);
+  //       } finally {
+  //         setIsLoading(false);
+  //       }
+  //     }
+  //   };
+
+  //   fetchUserNFTs();
+  // }, [user]);
 
   // Loading state management
   useEffect(() => {
@@ -72,22 +90,18 @@ const GameWaitingPage = () => {
   };
 
   const handleEnterGame = () => {
-    const uniqueAssets = NFTs.filter((nft) => nft.type === "UniqueAsset").map((nft) => nft.item);
-  
-    const assetsTrees = uniqueAssets.filter((item) =>
-      ["Green Giant Tree", "Golden Giant Tree", "Purple Giant Tree"].includes(item.name)
-    );
-  
-    if (assetsTrees.length > 0) {
-      console.log(assetsTrees);
-      navigate("/game-playing");
-    } else {
-      console.log("No matching assets found.");
-      navigate("/game-login/solana/deposite/mint");
-    }
+    setIsLoading(true); // Bắt đầu loading
+
+    // Sử dụng setTimeout để tạo độ trễ giả lập
+    setTimeout(() => {
+      if (userTree === null || userTree === undefined) {
+        navigate("/game-login/solana/deposite/mint");
+      } else {
+        navigate("/game-playing");
+      }
+    }, 4000); // Delay 2 giây trước khi navigate
   };
-  
-  
+
 
   // Rendering loading state
   if (isLoading) {
