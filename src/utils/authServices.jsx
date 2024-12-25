@@ -226,18 +226,57 @@ export const getAllItems = async () => {
   }
 };
 
-export const getAllPurchaseByUserId = async (userId) => {
+export const getAllPurchaseByUserId = async (token) => {
   try {
     const response = await axios.get(
-      `${API_URL_BE}/purchase/${userId}`,
+      `${API_URL_BE}/purchase/userId`,
       {
         headers: {
           Accept: "application/json",
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
         },
       },
     );
     return response.data;
   } catch (error) {
     console.log(error)
+  }
+};
+
+export const buyItemByUser = async (token, itemId, quantity) => {
+  try {
+    const response = await axios.post(
+      `${API_URL_BE}/purchase/add`,
+      {itemId, quantity},
+      {
+        headers: {
+          Accept: "application/json",
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      },
+    );
+    return response.data;
+  } catch (error) {
+    console.log("Loi: ",error)
+  }
+};
+
+export const getUserInfo = async (token) => {
+  try {
+    const response = await axios.get(
+      `${API_URL_BE}/get/user`,
+      {
+        headers: {
+          Accept: "application/json",
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      },
+    );
+    return response.data;
+  } catch (error) {
+    console.log("Loi: ",error)
   }
 };

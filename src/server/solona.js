@@ -155,7 +155,7 @@ const User = mongoose.model("User", userSchema);
 
 app.get("/users", async (req, res) => {
   const items = await User.find();
-  console.log("users:", items);
+  //console.log("users:", items);
 
   res.json(items);
 });
@@ -201,6 +201,28 @@ app.post("/get/user/sub", async (req, res) => {
   }
 });
 
+app.get("/get/user", authMiddleware, async (req, res) => {
+  const userSub = req.user;
+  //console.log(userSub);
+
+  if (!userSub.userId) {
+    return res.status(400).json({ message: "Sub trong" });
+  }
+
+  try {
+    const user = await User.findOne({ sub: userSub.userId });
+    if (user) {
+      res.json(user);
+    } else {
+      res.status(404).json({ message: "User not found" });
+    }
+  } catch (error) {
+    console.error("Error fetching user:", error);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+});
+
+
 app.delete("/users/:id", async (req, res) => {
   await User.findByIdAndDelete(req.params.id);
   res.json({ message: "users deleted" });
@@ -234,7 +256,7 @@ const Tree = mongoose.model("Tree", treeSchema);
 
 app.get("/trees", async (req, res) => {
   const items = await Tree.find();
-  console.log("Tree:", items);
+  //console.log("Tree:", items);
 
   res.json(items);
 });
@@ -264,7 +286,7 @@ const Item = mongoose.model("Item", itemScheme);
 
 app.get("/items", async (req, res) => {
   const items = await Item.find();
-  console.log("items:", items);
+  //console.log("items:", items);
 
   res.json(items);
 });
@@ -289,6 +311,7 @@ const purchaseSchema = new mongoose.Schema({
   quantity: { type: Number, required: true },
   price: { type: Number, required: true },
   totalPrice: { type: Number, required: true },
+  use_quantity: { type: Number, require: true },
   purchaseDate: { type: Date, default: Date.now },
 });
 
@@ -296,7 +319,7 @@ const Purchase = mongoose.model("Purchase", purchaseSchema);
 
 app.get("/purchase", async (req, res) => {
   const items = await Purchase.find();
-  console.log("purchase:", items);
+  //console.log("purchase:", items);
   res.json(items);
 });
 
@@ -309,28 +332,135 @@ app.post("/purchase", async (req, res) => {
   res.json(updatedItem);
 });
 
-app.get("/purchase/:userId", async (req, res) => {
+app.post("/purchase/add", authMiddleware, async (req, res) => {
   try {
-    // Tìm tất cả các tài liệu với userId tương ứng
-    if (req.params.userId === null || undefined) {
-      return;
+    const { itemId, quantity } = req.body; // Tạo bản ghi mới từ dữ liệu trong req.body
+
+    const userSub = req.user;
+
+    if (!userSub.userId) {
+
+
+      return res.status(400).json({
+        success: false,
+        error: "User not found",
+      });
     }
-    const userPurchases = await Purchase.find({ userId: req.params.userId });
 
-    if (userPurchases.length === 0) {
-      return res
-        .status(200)
-        .json({ message: "No purchases found for this userId", error: true });
+    if (quantity <= 0) {
+
+
+      return res.status(400).json({
+        success: false,
+        error: "Quanlity > 0",
+      });
     }
 
-    // Ghi log toàn bộ dữ liệu
-    console.log("User purchases:", userPurchases);
+    const ItemById = await Item.findOne({ _id: itemId });
+    if (!ItemById) {
+      return res.status(400).json({
+        success: false,
+        error: "Item not found",
+      });
+    }
 
-    // Trả về dữ liệu
-    res.json(userPurchases);
+    const UserById = await User.findOne({ sub: userSub.userId });
+    if (!UserById) {
+      return res.status(400).json({
+        success: false,
+        error: "User not found",
+      });
+    }
+
+    //const userId = userSub.userId;
+    // itemId da co
+
+    const { name, price } = ItemById;
+    const totalPrice = parseInt(ItemById.price) * parseInt(quantity);
+
+    // Kiểm tra điểm của user
+    if (UserById.points < totalPrice) {
+      return res.status(400).json({
+        success: false,
+        error: "Not enough points to purchase.",
+      });
+    }
+
+
+    const newPurchase = new Purchase({
+      userId: userSub.userId,
+      itemId: itemId,
+      itemName: name,
+      quantity: quantity,
+      price: price,
+      totalPrice: totalPrice,
+      use_quantity: 0,
+    });
+    // Lưu vào cơ sở dữ liệu
+    const savedPurchase = await newPurchase.save();
+    // Trừ điểm của user
+    UserById.points -= totalPrice;
+    await UserById.save();
+    // Trả về kết quả
+    res.status(200).json(savedPurchase);
+
+  } catch (error) {
+    console.error("Error in /purchase/new API:", error);
+    res.status(500).json({ error: "Internal Server Error", details: error.message });
+  }
+});
+
+
+app.get("/purchase/userId", authMiddleware, async (req, res) => {
+  const userSub = req.user;
+
+  if (!userSub.userId) {
+
+
+    return res.status(400).json({
+      success: false,
+      error: "User not found",
+    });
+  }
+  console.log("user: ", userSub);
+  // Lấy danh sách purchase theo userId
+  const purchases = await Purchase.find({ userId: userSub.userId });
+  if (purchases.length === 0) {
+    return res.status(404).json({
+      success: false,
+      error: "No purchases found for this user.",
+    });
+  }
+  try {
+    // Tính tổng số lượng item đã mua và đã sử dụng cho từng loại item
+    const summary = purchases.reduce((acc, purchase) => {
+      const { itemId, itemName, quantity, use_quantity } = purchase;
+
+      if (!acc[itemId]) {
+        acc[itemId] = {
+          itemId,
+          itemName,
+          totalPurchased: 0,
+          totalUsed: 0,
+        };
+      }
+
+      acc[itemId].totalPurchased += quantity;
+      acc[itemId].totalUsed += use_quantity;
+
+      return acc;
+    }, {});
+
+    // Chuyển đối tượng tổng hợp thành mảng
+    const summaryArray = Object.values(summary);
+    return res.json({
+      success: true,
+      summary: summaryArray,
+    });
+
   } catch (error) {
     console.error("Error fetching purchases:", error.message);
-    res
+    return res
       .status(500)
       .json({ message: "Error fetching purchases", error: error.message });
   }
@@ -349,7 +479,7 @@ app.post("/api/convert-sol", authMiddleware, async (req, res) => {
   }
   const userSub = req.user;
   if (!userSub.userId) {
-    console.log(userSub);
+
 
     return res.status(400).json({
       success: false,
@@ -423,23 +553,22 @@ app.post("/api/convert-sol", authMiddleware, async (req, res) => {
   }
 });
 
-// Tạo API để chuyển SOL từ ví người chơi sang ví chính
 app.post("/api/claim-sol", authMiddleware, async (req, res) => {
   const { walletAddressNhan, points } = req.body;
 
   // Kiểm tra thông số đầu vào
   if (!walletAddressNhan || points <= 0) {
-    console.log(walletAddressNhan, points);
+    //console.log(walletAddressNhan, points);
     return res
       .status(400)
       .json({ error: "Invalid wallet address or points amount." });
   }
   const userSub = req.user;
   if (!userSub.userId) {
-    console.log(userSub);
-
-    return;
+    //console.log(userSub);
+    return res.status(400).json({ error: "User authentication failed." });
   }
+
   // Tìm người dùng theo ID
   const updatedItem = await User.findOne({ sub: userSub.userId });
 
@@ -455,23 +584,29 @@ app.post("/api/claim-sol", authMiddleware, async (req, res) => {
   // Tính số Solana nhận được từ số điểm
   const solToReceive = points / 100;
 
-  // Giảm số điểm của người dùng
-  updatedItem.points -= points;
-
   try {
     const connection = new Connection(clusterApiUrl("devnet"), "confirmed");
-    console.log("Vi nhan: ", walletAddressNhan);
 
     // Địa chỉ ví người chơi và ví chính (ví 2)
     const senderPublicKey = new PublicKey(
       "9We7ffkzoKcbNKoG7wU9gBUeN97256jTLtrsdS8eozKB"
     );
-    const receiverPublicKey = new PublicKey(walletAddressNhan); // Ví chính (người nhận)
+    const receiverPublicKey = new PublicKey(walletAddressNhan);
 
-    // Lấy blockhash gần nhất
-    const { blockhash } = await connection.getRecentBlockhash();
+    // Kiểm tra số dư của ví gửi
+    const balance = await connection.getBalance(senderPublicKey);
+    const lamportsToSend = solToReceive * 1000000000;
+
+    if (balance < lamportsToSend) {
+      console.error("Insufficient balance in sender wallet");
+      return res.status(500).json({ error: "System is busy. Please try again later." });
+    }
+
+    // Giảm số điểm của người dùng
+    updatedItem.points -= points;
 
     // Tạo giao dịch
+    const { blockhash } = await connection.getRecentBlockhash();
     const transaction = new Transaction({
       recentBlockhash: blockhash,
       feePayer: senderPublicKey,
@@ -479,29 +614,27 @@ app.post("/api/claim-sol", authMiddleware, async (req, res) => {
       SystemProgram.transfer({
         fromPubkey: senderPublicKey,
         toPubkey: receiverPublicKey,
-        lamports: solToReceive * 1000000000, // Chuyển đổi SOL sang lamports
+        lamports: lamportsToSend,
       })
     );
 
     // Ký và gửi giao dịch
-
     const base58PrivateKey =
       "4AxXEWC73yQeoBjNoZ4sW5V5S7YU3mUs7iXo88b9AnRBpwy2s7NHzeSkG85ewF4gvojaaNWXsvQP4hkQjHKobigy";
-    const secretKey = bs58.decode(base58PrivateKey); // Decode to Uint8Array
+    const secretKey = bs58.decode(base58PrivateKey);
 
     if (secretKey.length !== 64) {
       throw new Error("Invalid secret key size");
     }
 
     const senderKeypair = Keypair.fromSecretKey(secretKey);
-
-    // Gửi giao dịch
     const signature = await connection.sendTransaction(transaction, [
       senderKeypair,
     ]);
-    console.log("Transaction signature: ", signature);
 
-    // Lưu lại thông tin đã cập nhật (số điểm đã giảm)
+    //console.log("Transaction signature: ", signature);
+
+    // Lưu lại thông tin đã cập nhật
     await updatedItem.save();
 
     // Trả về kết quả
@@ -517,6 +650,7 @@ app.post("/api/claim-sol", authMiddleware, async (req, res) => {
       .json({ error: "Transaction failed", details: err.message });
   }
 });
+
 
 // Lắng nghe yêu cầu
 app.listen(port, () => {
