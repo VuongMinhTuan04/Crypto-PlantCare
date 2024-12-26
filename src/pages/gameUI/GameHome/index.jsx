@@ -62,7 +62,7 @@ function GameHome() {
 
   useEffect(() => {
     loadUserTreeByToken();
-  }, [user?.sub, reload]);
+  }, [user?.sub]);
 
   const loadUserTreeByToken = async () => {
     const token = JSON.parse(localStorage.getItem("tokenGoogle"));
@@ -135,8 +135,7 @@ function GameHome() {
     const token = JSON.parse(localStorage.getItem("tokenGoogle"));
     try {
       const updatedTree = await getUserTreeByUser(token);
-      setUserTree(updatedTree); // Cập nhật state `userTree`
-      // Update points based on new level
+      setUserTree(updatedTree); 
       const currentLevel = levels.find(
         (level) => level.level === Number(updatedTree.level)
       );

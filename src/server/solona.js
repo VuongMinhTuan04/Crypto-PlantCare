@@ -96,9 +96,10 @@ app.post("/auth/google", async (req, res) => {
     );
 
     const user = await User.findOne({ sub: sub });
-    const picture_d = "https://i.postimg.cc/pT00NdDC/DALL-E-2024-12-26-11-19-09-A-whimsical-tree-designed-as-a-playful-avatar-featuring-vibrant-green.webp";
+    const picture_d =
+      "https://i.postimg.cc/pT00NdDC/DALL-E-2024-12-26-11-19-09-A-whimsical-tree-designed-as-a-playful-avatar-featuring-vibrant-green.webp";
     if (!user) {
-      const newUser = new User({ sub, email, picture_d, name });
+      const newUser = new User({ sub, email, picture, name });
       await newUser.save(newUser);
       console.log("Tao user moi thanh cong");
     } else {
@@ -107,7 +108,7 @@ app.post("/auth/google", async (req, res) => {
 
     res.json({
       token: jwtToken,
-      user: { userId: user._id, sub, email, name, picture },
+      user: { sub, email, name, picture },
     });
   } catch (error) {
     console.error(error);
@@ -155,9 +156,9 @@ const userSchema = new mongoose.Schema({
 const User = mongoose.model("User", userSchema);
 
 app.post("/api/update-points", authMiddleware, async (req, res) => {
-  const users = req.user
+  const users = req.user;
   const { points } = req.body;
-  console.log(users)
+  console.log(users);
   // Kiểm tra dữ liệu đầu vào
   if (!users.userId || points === undefined) {
     return res.status(400).json({ message: "Missing sub or points" });
@@ -391,7 +392,7 @@ app.put("/purchase/update", authMiddleware, async (req, res) => {
     // Tìm UserTree và cập nhật exp
     const userTree = await UserTree.findOneAndUpdate(
       { userId: user.userId },
-      { $inc: { exp: 35 } }, // Cộng thêm giá trị exp từ req.body
+      { $inc: { exp: numericExp } }, // Cộng thêm giá trị exp từ req.body
       { new: true } // Trả về document sau khi cập nhật
     );
 
@@ -481,10 +482,12 @@ app.post("/purchase/add", authMiddleware, async (req, res) => {
       });
     }
 
-    const updatePurchase = await Purchase.findOne({userId: userSub.userId, itemId: itemId});
+    const updatePurchase = await Purchase.findOne({
+      userId: userSub.userId,
+      itemId: itemId,
+    });
 
-    if(!updatePurchase){
-
+    if (!updatePurchase) {
       const newPurchase = new Purchase({
         userId: userSub.userId,
         itemId: itemId,
@@ -495,14 +498,17 @@ app.post("/purchase/add", authMiddleware, async (req, res) => {
         use_quantity: 0,
       });
       const sPurchase = await newPurchase.save();
-      res.status(200).json(sPurchase);
+      UserById.points -= totalPrice;
+      await UserById.save();
+      return res.status(200).json({ sPurchase, point: UserById.points });
     }
 
-    
-    updatePurchase.totalPrice =parseInt(updatePurchase.totalPrice) + parseInt(totalPrice);
-    
-    updatePurchase.quantity = parseInt(updatePurchase.quantity) + parseInt(quantity);
+    console.log(updatePurchase)
+    updatePurchase.totalPrice =
+      parseInt(updatePurchase.totalPrice) + parseInt(totalPrice);
 
+    updatePurchase.quantity =
+      parseInt(updatePurchase.quantity) + parseInt(quantity);
 
     // Lưu vào cơ sở dữ liệu
     const savedPurchase = await updatePurchase.save();
@@ -510,7 +516,7 @@ app.post("/purchase/add", authMiddleware, async (req, res) => {
     UserById.points -= totalPrice;
     await UserById.save();
     // Trả về kết quả
-    res.status(200).json(savedPurchase);
+    return res.status(200).json({ savedPurchase, point: UserById.points });
   } catch (error) {
     console.error("Error in /purchase/new API:", error);
     res
@@ -586,7 +592,7 @@ const userTreeSchema = mongoose.Schema(
 
 const UserTree = mongoose.model("UserTree", userTreeSchema);
 
-app.put("/userTree/updateLevel",authMiddleware,  async (req, res) => {
+app.put("/userTree/updateLevel", authMiddleware, async (req, res) => {
   const user = req.user;
 
   try {
@@ -605,7 +611,7 @@ app.put("/userTree/updateLevel",authMiddleware,  async (req, res) => {
     }
 
     // Trả về kết quả thành công
-    res.status(200).json({
+    return res.status(200).json({
       message: "Level updated successfully.",
       data: {
         userId: userTree.userId,
@@ -731,7 +737,7 @@ app.post("/api/user-trees/watering", authMiddleware, async (req, res) => {
         .json({ message: "User tree not found", error: true });
     }
 
-    res.status(200).json({ message: "Tưới nước thành công", updatedUserTree});
+    res.status(200).json({ message: "Tưới nước thành công", updatedUserTree });
   } catch (error) {
     res.status(500).json({ message: "Error updating user tree", error });
   }
@@ -853,7 +859,7 @@ app.post("/api/claim-sol", authMiddleware, async (req, res) => {
   }
 
   // Tính số Solana nhận được từ số điểm
-  const solToReceive = points / 100;
+  const solToReceive = points / 200;
 
   try {
     const connection = new Connection(clusterApiUrl("devnet"), "confirmed");

@@ -1,4 +1,4 @@
-import { levels } from '@/constants/levels';
+import { levels } from "@/constants/levels";
 import { updateLevel } from "@/utils/authServices";
 import { useEffect, useState } from "react";
 
@@ -22,16 +22,14 @@ const LevelDisplay = ({ userTree, onLevelUp }) => {
   useEffect(() => {
     const checkAndUpdateLevel = async () => {
       if (currentExp >= maxExp && !levelChecked) {
-        setLevelChecked(true);
-        const leveledUp = await checkLevelUp();
+          const leveledUp = await checkLevelUp();
         if (leveledUp) {
-          onLevelUp(); 
+          onLevelUp();
         }
       }
     };
 
     checkAndUpdateLevel();
-    setLevelChecked(false)
   }, [userTree.exp, onLevelUp, levelChecked]); // Đảm bảo thêm `onLevelUp` vào dependencies
 
   const checkLevelUp = async () => {
