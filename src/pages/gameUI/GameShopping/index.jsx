@@ -115,7 +115,11 @@ const ShopPage = () => {
 
         const res = await getUserInfo(token);
         //setUserBalance(res); // Lưu thông tin user vào state
-        setUserBalance(res.points);
+        
+        if(res.points){
+          setUserBalance(res.points);
+        }
+        
         //console.log("User Info:", res);
       } catch (error) {
         console.error("Error fetching user info:", error);
@@ -163,7 +167,7 @@ const ShopPage = () => {
       
 
       const response = await buyItemByUser(token,selectedItem.itemId,selectedItem.quantity );
-      //console.log(response);
+      console.log(response);
       setUserBalance("...");
 
     } else {
@@ -181,7 +185,7 @@ const ShopPage = () => {
             onClick={() => navigate("/game-playing")}
             className="hover:opacity-80 transition-opacity"
           >
-            <ArrowLeftCircleIcon className="size-8 hover:bg-green-600 transition duration-300 rounded-full" />
+            <ArrowLeftCircleIcon className="size-10 hover:bg-green-600 transition duration-300 rounded-full" />
           </button>
         </div>
       </div>
@@ -198,9 +202,8 @@ const ShopPage = () => {
             />
           ))}
         </div>
-
         {/* Buy Button */}
-        <div className="text-center relative top-32 sm:relative sm:top-10">
+        <div className="text-center relative top-36 sm:relative sm:top-6">
           <button
             onClick={handleBuy}
             className={`w-80 py-2 px-4 rounded-full font-bold transition duration-300 ${
@@ -213,6 +216,7 @@ const ShopPage = () => {
             BUY
           </button>
         </div>
+
       </div>
     </div>
   );

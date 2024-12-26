@@ -92,12 +92,13 @@ app.post("/auth/google", async (req, res) => {
     const jwtToken = jwt.sign(
       { userId: sub, email, name, picture },
       CLIENT_SECRET,
-      { expiresIn: "1h" }
+      { expiresIn: "24h" }
     );
 
     const user = await User.findOne({ sub: sub });
+    const picture_d = "https://i.postimg.cc/pT00NdDC/DALL-E-2024-12-26-11-19-09-A-whimsical-tree-designed-as-a-playful-avatar-featuring-vibrant-green.webp";
     if (!user) {
-      const newUser = new User({ sub, email, picture, name });
+      const newUser = new User({ sub, email, picture_d, name });
       await newUser.save(newUser);
       console.log("Tao user moi thanh cong");
     } else {
@@ -480,17 +481,31 @@ app.post("/purchase/add", authMiddleware, async (req, res) => {
       });
     }
 
-    const newPurchase = new Purchase({
-      userId: userSub.userId,
-      itemId: itemId,
-      itemName: name,
-      quantity: quantity,
-      price: price,
-      totalPrice: totalPrice,
-      use_quantity: 0,
-    });
+    const updatePurchase = await Purchase.findOne({userId: userSub.userId, itemId: itemId});
+
+    if(!updatePurchase){
+
+      const newPurchase = new Purchase({
+        userId: userSub.userId,
+        itemId: itemId,
+        itemName: name,
+        quantity: quantity,
+        price: price,
+        totalPrice: totalPrice,
+        use_quantity: 0,
+      });
+      const sPurchase = await newPurchase.save();
+      res.status(200).json(sPurchase);
+    }
+
+    
+    updatePurchase.totalPrice =parseInt(updatePurchase.totalPrice) + parseInt(totalPrice);
+    
+    updatePurchase.quantity = parseInt(updatePurchase.quantity) + parseInt(quantity);
+
+
     // Lưu vào cơ sở dữ liệu
-    const savedPurchase = await newPurchase.save();
+    const savedPurchase = await updatePurchase.save();
     // Trừ điểm của user
     UserById.points -= totalPrice;
     await UserById.save();

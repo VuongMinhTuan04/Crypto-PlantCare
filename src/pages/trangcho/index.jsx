@@ -143,7 +143,7 @@ const GameWaitingPage = () => {
         <div className="relative z-20 flex flex-col items-center justify-center h-full text-white px-4">
           {/* User Image */}
           <img
-            src={user.picture || "/api/placeholder/200/200"}
+            src="https://i.postimg.cc/pT00NdDC/DALL-E-2024-12-26-11-19-09-A-whimsical-tree-designed-as-a-playful-avatar-featuring-vibrant-green.webp"
             alt="User Profile"
             className="w-32 h-32 rounded-full object-cover mb-4 border-4 border-white shadow-lg"
           />

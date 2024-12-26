@@ -28,7 +28,7 @@ const LoginPage = () => {
       
       if (data.token) {
         localStorage.setItem("tokenGoogle", JSON.stringify(data.token));
-        setIsLoginSuccessOpen(true);
+      setIsLoginSuccessOpen(true);
         navigate("/game-login/waitinggame");
       } else {
         console.error("No token received");
@@ -38,18 +38,19 @@ const LoginPage = () => {
     }
   }, [navigate, setIsLoginSuccessOpen]);
 
-  const createUserToGameShift = async (referenceId, email) => {
-    try {
-      const resp = await createUser(referenceId, email);
-      console.log("Tạo user thành công:", resp);
 
-      if (resp.response.data.statusCode === 409) {
-        return;
-      }
-    } catch (error) {
-      console.error("Lỗi khi tạo user trong GameShift:", error);
-    }
-  };
+  // const createUserToGameShift = async (referenceId, email) => {
+  //   try {
+  //     const resp = await createUser(referenceId, email);
+  //     console.log("Tạo user thành công:", resp);
+
+  //     if (resp.response.data.statusCode === 409) {
+  //       return;
+  //     }
+  //   } catch (error) {
+  //     console.error("Lỗi khi tạo user trong GameShift:", error);
+  //   }
+  // };
 
   const [isLoading, setIsLoading] = useState(true);
 
