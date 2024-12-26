@@ -36,13 +36,8 @@ Crypto-PlantCare/
 ### 1. Cài đặt phụ thuộc:
 
 #### Cài đặt frontend (ReactJS):
-1. Di chuyển vào thư mục `client`:
-   cd frontend
-2. Cài đặt các phụ thuộc:
-   npm install
-#### Cài đặt backend (ExpressJS):
-1. Di chuyển vào thư mục api
-   cd api
+1. Di chuyển vào thư mục `Crypto-PlantCare`:
+   cd Crypto-PlantCare
 2. Cài đặt các phụ thuộc:
    npm install
 
@@ -54,10 +49,8 @@ Crypto-PlantCare/
 2. Chạy dự án
    npm run dev
 #### 2. Chạy Express.js
-1. Di chuyển vào thư mục api
-   cd api
 2. Chạy dự án
-   npm start
+   node src/server/solona.js
 
 
 ### Cách hoạt động của dự án:
