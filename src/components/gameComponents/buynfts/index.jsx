@@ -121,7 +121,7 @@ const ItemShopModal = ({
         getAllItems(),
         getAllPurchaseByUserId(token),
       ]);
-      
+
       console.log(purchasesResponse);
 
       if (purchasesResponse.error) {
@@ -247,7 +247,7 @@ const ItemShopModal = ({
             <p className="text-gray-600 text-sm">
               {selectedItem.name === "Watering Can"
                 ? "Use to water your tree and start growing process"
-                : `This is a description of the ${selectedItem.name}.`}
+                : `Product increases ${selectedItem.exp} exp .`}
             </p>
             <button
               onClick={handleUseClick}

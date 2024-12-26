@@ -1,3 +1,4 @@
+import { PopupThongBao } from "@/components/thongbao";
 import { buyItemByUser, getAllItems, getUserInfo } from "@/utils/authServices";
 import { ArrowLeftCircleIcon } from "@heroicons/react/24/solid";
 import { useEffect, useState } from "react";
@@ -8,20 +9,20 @@ const ITEM_CONFIGS = {
   quantities: [
     { quantity: "1", price: 1 },
     { quantity: "4", price: 4 },
-    { quantity: "9", price: 8 }
+    { quantity: "9", price: 8 },
   ],
   positions: {
     "Normal Fertilizer": "-top-2 -left-[5px]",
     "Super Fertilizer": "-top-2 -left-[4px]",
     "VIP Fertilizer": "-top-2 -left-[4px]",
-  }
+  },
 };
 
 const transformApiData = (apiItems) => {
   const transformedItems = [];
   let currentId = 1;
 
-  apiItems.forEach(apiItem => {
+  apiItems.forEach((apiItem) => {
     // Create three variants for each item (different quantities)
     ITEM_CONFIGS.quantities.forEach(({ quantity, price }) => {
       transformedItems.push({
@@ -33,7 +34,7 @@ const transformApiData = (apiItems) => {
         background: "/assets/images/Ellipse-50.png",
         available: true,
         quantity: quantity,
-        position: ITEM_CONFIGS.positions[apiItem.name] || "-top-3 -left-[10px]" // Default position if not specified
+        position: ITEM_CONFIGS.positions[apiItem.name] || "-top-3 -left-[10px]", // Default position if not specified
       });
     });
   });
@@ -115,21 +116,34 @@ const ShopPage = () => {
 
         const res = await getUserInfo(token);
         //setUserBalance(res); // Lưu thông tin user vào state
+        setUserBalance(res.points);
+
+        // if(res) {
+        //   if (res.points) {
+        //     setUserBalance(res.points);
+        //   }
+        // }
+        // console.log(res);
+       
         
-        if(res.points){
-          setUserBalance(res.points);
-        }
-        
-        //console.log("User Info:", res);
+
+       // console.log("User Info:", res);
       } catch (error) {
         console.error("Error fetching user info:", error);
       }
     };
 
     fetchUserInfo();
-  }, [userBalance]);
+  }, [  ]);
+
+  const [errorBalance, setErrorBalance] = useState(false)
 
   const handleItemClick = (itemId) => {
+    const selectedItem = shopItems.find((item) => item.id === itemId);
+    if (selectedItem && userBalance < selectedItem.price) {
+      setErrorBalance(true);
+      return;
+    }
     setActiveItemId(itemId === activeItemId ? null : itemId);
   };
 
@@ -147,29 +161,23 @@ const ShopPage = () => {
     }
   };
 
+  const [success, setSuccess] = useState(false);
 
-  
   const handleBuy = async () => {
     const selectedItem = shopItems.find((item) => item.id === activeItemId);
+    setSuccess(true);
     if (selectedItem) {
-      //console.log(selectedItem);
-      
-      // console.log("Buying item:", {
-      //   id: selectedItem.id,
-      //   name: selectedItem.name,
-      //   price: selectedItem.price,
-      //   quantity: selectedItem.quantity,
-      //   itemId: selectedItem.itemId,
-      // });
-
       const token = JSON.parse(localStorage.getItem("tokenGoogle"));
-      //console.log("token: ",token);
-      
 
-      const response = await buyItemByUser(token,selectedItem.itemId,selectedItem.quantity );
-      console.log(response);
-      setUserBalance("...");
-
+      const response = await buyItemByUser(
+        token,
+        selectedItem.itemId,
+        selectedItem.quantity
+      );
+      console.log(response)
+      if (response) {
+        setUserBalance(response.point);
+      }
     } else {
       console.log("Please select an item to buy");
     }
@@ -177,6 +185,18 @@ const ShopPage = () => {
 
   return (
     <div className="bg-background-lg-shop bg-cover bg-center bg-no-repeat sm:py-20 py-12 px-8 w-full h-full relative">
+      <PopupThongBao
+        hienThi={success}
+        dongLai={() => setSuccess(false)}
+        tieuDe={"Thông báo"}
+        noiDung={"Bạn đã mua thành công"}
+      />
+      <PopupThongBao
+        hienThi={errorBalance}
+        dongLai={() => setErrorBalance(false)}
+        tieuDe={"Thông báo"}
+        noiDung={"Số dư không đủ"}
+      />
       {/* Header Section */}
       <div className="flex relative -top-6 h-19">
         <BalanceDisplay balance={userBalance} />
@@ -216,7 +236,6 @@ const ShopPage = () => {
             BUY
           </button>
         </div>
-
       </div>
     </div>
   );
