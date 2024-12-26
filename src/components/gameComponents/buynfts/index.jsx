@@ -2,11 +2,16 @@ import {
   getAllItems,
   getAllPurchaseByUserId,
   updatePurchase,
-  userDetailGoogle,
+  userDetailGoogle
 } from "@/utils/authServices";
 import { useEffect, useState } from "react";
 
-const ItemShopModal = ({ show, onClose, onWateringCanUse, onShopItemClick }) => {
+const ItemShopModal = ({
+  show,
+  onClose,
+  onWateringCanUse,
+  onShopItemClick,
+}) => {
   const [selectedItem, setSelectedItem] = useState(null);
   const [showNotification, setShowNotification] = useState(false);
   const [notificationMessage, setNotificationMessage] = useState("");
@@ -68,7 +73,7 @@ const ItemShopModal = ({ show, onClose, onWateringCanUse, onShopItemClick }) => 
         icon: item.icon_img,
         quantity: totalQuantity,
         itemId: item._id,
-        exp: item.exp
+        exp: item.exp,
       };
     });
   };
@@ -116,7 +121,8 @@ const ItemShopModal = ({ show, onClose, onWateringCanUse, onShopItemClick }) => 
         getAllItems(),
         getAllPurchaseByUserId(token),
       ]);
-      console.log(purchasesResponse)
+      
+      console.log(purchasesResponse);
 
       if (purchasesResponse.error) {
         setShopItems([WATERING_CAN, ...FERTILIZER]);
@@ -150,13 +156,11 @@ const ItemShopModal = ({ show, onClose, onWateringCanUse, onShopItemClick }) => 
   const handleUseClick = async () => {
     if (!selectedItem) return;
 
-    console.log(selectedItem)
+    console.log(selectedItem);
+    const token = JSON.parse(localStorage.getItem("tokenGoogle"));
 
     if (selectedItem.name === "Watering Can") {
-      const canUseWater = onWateringCanUse();
-      if (canUseWater) {
-        showNotificationWithMessage("Watering successful!");
-      }
+      onWateringCanUse();
       return;
     }
 
@@ -165,12 +169,15 @@ const ItemShopModal = ({ show, onClose, onWateringCanUse, onShopItemClick }) => 
       return;
     }
 
-    const token = JSON.parse(localStorage.getItem("tokenGoogle"));
     try {
-      const resp = await updatePurchase(token, selectedItem.itemId, Number(selectedItem.exp));
-      console.log(resp)
+      const resp = await updatePurchase(
+        token,
+        selectedItem.itemId,
+        Number(selectedItem.exp)
+      );
+      console.log(resp);
       const remainingQuantity = resp.data.remainingQuantity || 0;
-      
+
       setShopItems((prevItems) =>
         prevItems.map((item) =>
           item.id === selectedItem.id
@@ -181,7 +188,7 @@ const ItemShopModal = ({ show, onClose, onWateringCanUse, onShopItemClick }) => 
 
       setSelectedItem((prev) => ({
         ...prev,
-        quantity: remainingQuantity
+        quantity: remainingQuantity,
       }));
 
       if (remainingQuantity <= 0) {
@@ -189,7 +196,7 @@ const ItemShopModal = ({ show, onClose, onWateringCanUse, onShopItemClick }) => 
       } else {
         showNotificationWithMessage("Item used successfully!");
       }
-      onShopItemClick()
+      onShopItemClick();
     } catch (error) {
       console.error("Failed to use item:", error);
       showNotificationWithMessage("Failed to use item");

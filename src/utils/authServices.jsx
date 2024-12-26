@@ -412,3 +412,21 @@ export const updateLevel = async (token) => {
     console.log("Loi: ",error)
   }
 };
+export const claimPoint = async (token, points) => {
+  try {
+    const response = await axios.post(
+      `${API_URL_BE}/api/update-points`,
+      {token, points},
+      { 
+        headers: {
+          Accept: "application/json",
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      },
+    );
+    return response.data;
+  } catch (error) {
+    console.log("Loi: ",error)
+  }
+};

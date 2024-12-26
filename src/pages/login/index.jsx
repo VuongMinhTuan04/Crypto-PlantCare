@@ -12,23 +12,31 @@ const LoginPage = () => {
   const [isLoginSuccessOpen, setIsLoginSuccessOpen] = useState(false);
 
   const handleGoogleLoginSuccess = useCallback(async (credentialResponse) => {
-    // Gửi token đến backend để xác thực
-    await fetch("http://localhost:3000/auth/google", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ token: credentialResponse.credential }),
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        console.log(data);
-        //localStorage.setItem("userId", JSON.stringify(data.user.userId));
+    try {
+      const response = await fetch("http://localhost:3000/auth/google", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token: credentialResponse.credential }),
+      });
+  
+      if (!response.ok) {
+        throw new Error('Login failed');
+      }
+  
+      const data = await response.json();
+      console.log("Login response:", data);
+      
+      if (data.token) {
         localStorage.setItem("tokenGoogle", JSON.stringify(data.token));
-          createUserToGameShift(data.user.sub, data.user.email);
-      })
-      .catch((err) => console.error(err));
-    setIsLoginSuccessOpen(true);
-    navigate("/game-login/waitinggame");
-  }, []);
+        setIsLoginSuccessOpen(true);
+        navigate("/game-login/waitinggame");
+      } else {
+        console.error("No token received");
+      } 
+    } catch (err) {
+      console.error("Login error:", err);
+    }
+  }, [navigate, setIsLoginSuccessOpen]);
 
   const createUserToGameShift = async (referenceId, email) => {
     try {

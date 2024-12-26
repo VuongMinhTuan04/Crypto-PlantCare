@@ -1,6 +1,7 @@
 import ItemShopModal from "@/components/gameComponents/buynfts";
 import CountdownToHarvest from "@/components/growthTimer";
 import LevelDisplay from "@/components/leveldisplay";
+import { levels } from "@/constants/levels";
 import {
   getTreeByUser,
   getUserByToken,
@@ -9,6 +10,33 @@ import {
 } from "@/utils/authServices";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+
+const PopupThongBao = ({ hienThi, dongLai, tieuDe, noiDung }) => {
+  if (!hienThi) return null;
+
+  return (
+    <div className="fixed inset-0 flex items-center justify-center z-50">
+      <div className="absolute inset-0 bg-black opacity-50"></div>
+      <div className="relative bg-white rounded-lg p-6 max-w-sm w-full mx-4 shadow-xl">
+        <div className="text-center">
+          <img
+            src="/assets/images/tree-coin.png"
+            alt="Hình quả"
+            className="w-16 h-16 mx-auto mb-4"
+          />
+          <h2 className="text-2xl font-bold text-green-600 mb-2">{tieuDe}</h2>
+          <p className="text-gray-600 text-lg mb-6">{noiDung}</p>
+          <button
+            onClick={dongLai}
+            className="w-full bg-green-500 text-white py-3 px-4 rounded-lg font-semibold hover:bg-green-600 transition-colors"
+          >
+            Đóng
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 function GameHome() {
   const navigate = useNavigate();
@@ -26,44 +54,55 @@ function GameHome() {
   });
   const [isClaimed, setIsClaimed] = useState(false); // Thêm trạng thái isClaimed
   const [reload, setReload] = useState(false);
+  const [showNotification, setShowNotification] = useState(false);
+  const [notificationMessage, setNotificationMessage] = useState("");
+  const [currentPoints, setCurrentPoints] = useState(0);
+  const [hienThiPopup, setHienThiPopup] = useState(false);
+  const [daNhanThongBao, setDaNhanThongBao] = useState(false);
 
   useEffect(() => {
-    const token = JSON.parse(localStorage.getItem("tokenGoogle"));
-    const loadUserTreeByToken = async () => {
-      try {
-        const resp = await getUserTreeByUser(token);
-        setUserTree(resp);
-      } catch (error) {
-        console.log(error);
-      }
-    };
     loadUserTreeByToken();
-  }, [user?.sub, reload]); // Thêm reload vào dependencies
+  }, [user?.sub, reload]);
+
+  const loadUserTreeByToken = async () => {
+    const token = JSON.parse(localStorage.getItem("tokenGoogle"));
+    try {
+      const resp = await getUserTreeByUser(token);
+      setUserTree(resp);
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  // Update points when userTree changes
+  useEffect(() => {
+    if (userTree) {
+      const currentLevel = levels.find(
+        (level) => level.level === Number(userTree.level)
+      );
+      setCurrentPoints(currentLevel?.points || 0);
+    }
+  }, [userTree]);
 
   const handleShopItemClick = () => {
     setReload((prev) => !prev);
   };
 
   useEffect(() => {
-    const tokenGoogle = localStorage.getItem("tokenGoogle");
-    if (tokenGoogle) {
-      try {
-        const parsedToken = JSON.parse(tokenGoogle);
-        const loadUserData = async () => {
-          try {
-            const resp = await getUserByToken(parsedToken);
-            console.log(resp);
-            setUser(resp);
-          } catch (error) {
-            console.error("Failed to fetch user details:", error);
-          }
-        };
-        loadUserData();
-      } catch (error) {
-        console.error("Invalid token format:", error);
-      }
-    }
+    loadUserData();
   }, []);
+
+  const loadUserData = async () => {
+    const tokenGoogle = localStorage.getItem("tokenGoogle");
+    const parsedToken = JSON.parse(tokenGoogle);
+    try {
+      const resp = await getUserByToken(parsedToken);
+      console.log(resp);
+      setUser(resp);
+    } catch (error) {
+      console.error("Failed to fetch user details:", error);
+    }
+  };
 
   useEffect(() => {
     const token = JSON.parse(localStorage.getItem("tokenGoogle"));
@@ -83,17 +122,6 @@ function GameHome() {
     };
     loadData();
   }, [user?.sub, reload]);
-  useEffect(() => {
-    if (userTree?.time_countdown) {
-      const storedHarvestTime = localStorage.getItem("harvest-time");
-      const currentTime = Date.now();
-      const harvestTime =
-        parseInt(storedHarvestTime) + parseInt(userTree.time_countdown);
-      if (currentTime < harvestTime) {
-        setIsCountdownActive(true);
-      }
-    }
-  }, [userTree]);
 
   const handleBasketClick = () => {
     navigate("/game-shopping");
@@ -108,17 +136,36 @@ function GameHome() {
     try {
       const updatedTree = await getUserTreeByUser(token);
       setUserTree(updatedTree); // Cập nhật state `userTree`
+      // Update points based on new level
+      const currentLevel = levels.find(
+        (level) => level.level === Number(updatedTree.level)
+      );
+      setCurrentPoints(currentLevel?.points || 0);
     } catch (error) {
       console.error("Failed to update user tree:", error);
     }
   };
 
+  const showNotificationWithMessage = (message) => {
+    setNotificationMessage(message);
+    setShowNotification(true);
+    setTimeout(() => setShowNotification(false), 2000);
+  };
+
   const handleWateringCanUse = async () => {
     const token = JSON.parse(localStorage.getItem("tokenGoogle"));
     try {
-      if (user?.userId) {
+      if (userTree.watering === false) {
         const resp = await setTimeCountDown(token, true);
-        console.log(resp);
+        console.log(resp.updatedUserTree);
+        const updatedUserTreeData = await getUserTreeByUser(token);
+        setUserTree(updatedUserTreeData);
+
+        setIsCountdownActive(true);
+        setIsClaimed(false);
+      } else {
+        showNotificationWithMessage("Đã tưới nước");
+        return;
       }
     } catch (error) {
       console.log(error);
@@ -130,9 +177,22 @@ function GameHome() {
     setIsCountdownActive(false);
   };
 
+  const [claimSuccess, setClaimSuccess] = useState(false);
   const handleHarvestComplete = () => {
-    alert("Cây đã ra quả! Đã đến lúc thu hoạch.");
-    setIsCountdownActive(false);
+    console.log(isClaimed);
+    if (!isClaimed && !daNhanThongBao) {
+      // Chỉ hiện popup nếu chưa claim và chưa nhận thông báo
+      setHienThiPopup(true);
+      setIsCountdownActive(false);
+    }
+  };
+
+  const handleClaimSuccess = (claimed) => {
+    if (claimed) {
+      setClaimSuccess(true);
+      loadUserData()
+      loadUserTreeByToken()
+    }
   };
 
   return (
@@ -165,10 +225,14 @@ function GameHome() {
       </div>
       {userTree?.time_countdown && (
         <CountdownToHarvest
+          key={userTree.time_countdown}
           time_countdown={userTree.time_countdown}
+          watering={userTree.watering}
           onComplete={handleHarvestComplete}
           isClaimed={isClaimed} // Truyền isClaimed xuống CountdownToHarvest
           setIsClaimed={setIsClaimed} // Truyền setIsClaimed xuống CountdownToHarvest
+          points={currentPoints}
+          onClaimSuccess={handleClaimSuccess}
         />
       )}
       {/* Basket Button */}
@@ -221,6 +285,24 @@ function GameHome() {
           />
         </div>
       </div>
+      {showNotification && (
+        <div className="fixed top-4 right-1/2 translate-x-1/2 bg-green-500 text-white p-4 rounded shadow z-50">
+          {notificationMessage}
+        </div>
+      )}
+      {/* Thêm vào trước thẻ div đóng cuối cùng */}
+      <PopupThongBao
+        hienThi={hienThiPopup}
+        dongLai={() => setHienThiPopup(false)}
+        tieuDe={"Thông báo mới !!"}
+        noiDung={" Cây của bạn đã ra quả! Bạn có thể thu hoạch ngay bây giờ."}
+      />
+      <PopupThongBao
+        hienThi={claimSuccess}
+        dongLai={() => setClaimSuccess(false)}
+        tieuDe={"Bạn nhận được"}
+        noiDung={`+ ${currentPoints} PTC`}
+      />
     </div>
   );
 }
