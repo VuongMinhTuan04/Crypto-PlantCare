@@ -154,23 +154,21 @@ const userSchema = new mongoose.Schema({
 const User = mongoose.model("User", userSchema);
 
 app.post("/usersbytoken", authMiddleware, async (req, res) => {
-  const user = req.user;  // Lấy thông tin người dùng từ middleware
+  const user = req.user; // Lấy thông tin người dùng từ middleware
   try {
     // Tìm người dùng theo sub (unique identifier của người dùng)
     const userItem = await User.findOne({ sub: user.userId });
-
 
     if (!userItem) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    res.json(userItem);  // Trả về thông tin người dùng
+    res.json(userItem); // Trả về thông tin người dùng
   } catch (error) {
     console.error("Error fetching user:", error);
     res.status(500).json({ message: "Internal server error" });
   }
 });
-
 
 // app.post('/items', async (req, res) => {
 //   // Tạo tên ngẫu nhiên
@@ -233,7 +231,6 @@ app.get("/get/user", authMiddleware, async (req, res) => {
     res.status(500).json({ message: "Internal Server Error" });
   }
 });
-
 
 app.delete("/users/:id", async (req, res) => {
   await User.findByIdAndDelete(req.params.id);
@@ -341,6 +338,68 @@ app.post("/purchase", async (req, res) => {
   res.json(updatedItem);
 });
 
+app.put("/purchase/update", authMiddleware, async (req, res) => {
+  const user = req.user;
+  const { itemId, exp } = req.body;
+  try {
+    const numericExp = Number(exp);
+    // Tìm và tăng giá trị use_quantity lên 1
+    const purchase = await Purchase.findOneAndUpdate(
+      { userId: user.userId, itemId },
+      { $inc: { use_quantity: 1 } },
+      { new: true }
+    );
+
+    if (!purchase) {
+      return res.status(404).json({ message: "Purchase not found" });
+    }
+
+    // Tính toán số lượng còn lại
+    const remainingQuantity = purchase.quantity - purchase.use_quantity;
+
+    // Tìm UserTree và cập nhật exp
+    const userTree = await UserTree.findOneAndUpdate(
+      { userId: user.userId },
+      { $inc: { exp: 35 } }, // Cộng thêm giá trị exp từ req.body
+      { new: true } // Trả về document sau khi cập nhật
+    );
+
+    if (!userTree) {
+      return res.status(404).json({ message: "UserTree not found" });
+    }
+
+    if (Number(remainingQuantity) <= 0) {
+      return res.status(200).json({
+        message: "You need to buy more",
+        data: {
+          itemId: purchase.itemId,
+          itemName: purchase.itemName,
+          dadung: purchase.use_quantity,
+          remainingQuantity,
+          userTreeExp: userTree.exp, // Trả về exp hiện tại trong UserTree
+        },
+      });
+    }
+
+    res.status(200).json({
+      message: "Purchase updated successfully",
+      data: {
+        itemId: purchase.itemId,
+        itemName: purchase.itemName,
+        dadung: purchase.use_quantity,
+        remainingQuantity,
+        exp: purchase.exp,
+        userTreeExp: userTree.exp, // Trả về exp hiện tại trong UserTree
+      },
+    });
+  } catch (error) {
+    console.error("Error updating purchase:", error.message);
+    res
+      .status(500)
+      .json({ message: "Internal Server Error", error: error.message });
+  }
+});
+
 app.post("/purchase/add", authMiddleware, async (req, res) => {
   try {
     const { itemId, quantity } = req.body; // Tạo bản ghi mới từ dữ liệu trong req.body
@@ -348,8 +407,6 @@ app.post("/purchase/add", authMiddleware, async (req, res) => {
     const userSub = req.user;
 
     if (!userSub.userId) {
-
-
       return res.status(400).json({
         success: false,
         error: "User not found",
@@ -357,8 +414,6 @@ app.post("/purchase/add", authMiddleware, async (req, res) => {
     }
 
     if (quantity <= 0) {
-
-
       return res.status(400).json({
         success: false,
         error: "Quanlity > 0",
@@ -395,7 +450,6 @@ app.post("/purchase/add", authMiddleware, async (req, res) => {
       });
     }
 
-
     const newPurchase = new Purchase({
       userId: userSub.userId,
       itemId: itemId,
@@ -412,20 +466,18 @@ app.post("/purchase/add", authMiddleware, async (req, res) => {
     await UserById.save();
     // Trả về kết quả
     res.status(200).json(savedPurchase);
-
   } catch (error) {
     console.error("Error in /purchase/new API:", error);
-    res.status(500).json({ error: "Internal Server Error", details: error.message });
+    res
+      .status(500)
+      .json({ error: "Internal Server Error", details: error.message });
   }
 });
-
 
 app.get("/purchase/userId", authMiddleware, async (req, res) => {
   const userSub = req.user;
 
   if (!userSub.userId) {
-
-
     return res.status(400).json({
       success: false,
       error: "User not found",
@@ -450,12 +502,12 @@ app.get("/purchase/userId", authMiddleware, async (req, res) => {
           itemId,
           itemName,
           totalPurchased: 0,
-          totalUsed: 0,
+          totalRemaining: 0,
         };
       }
 
       acc[itemId].totalPurchased += quantity;
-      acc[itemId].totalUsed += use_quantity;
+      acc[itemId].totalRemaining += quantity - use_quantity;
 
       return acc;
     }, {});
@@ -466,7 +518,6 @@ app.get("/purchase/userId", authMiddleware, async (req, res) => {
       success: true,
       summary: summaryArray,
     });
-
   } catch (error) {
     console.error("Error fetching purchases:", error.message);
     return res
@@ -482,14 +533,48 @@ const userTreeSchema = mongoose.Schema(
     treeId: { type: String, required: true },
     point: { type: String, required: true },
     watering: { type: Boolean, required: true },
-    exp: { type: String, required: false },
-    level: { type: String, required: true },
+    exp: { type: Number, required: false },
+    level: { type: Number, required: true },
     time_countdown: { type: String, required: false },
   },
   { collection: "user_tree" }
 );
 
 const UserTree = mongoose.model("UserTree", userTreeSchema);
+
+app.put("/userTree/updateLevel",authMiddleware,  async (req, res) => {
+  const user = req.user;
+
+  try {
+    if (!user.userId) {
+      return res.status(400).json({ message: "userId is required." });
+    }
+
+    const userTree = await UserTree.findOneAndUpdate(
+      { userId: user.userId },
+      { $inc: { level: 1 } }, // Tăng giá trị level
+      { new: true } // Trả về document sau khi cập nhật
+    );
+
+    if (!userTree) {
+      return res.status(404).json({ message: "UserTree not found." });
+    }
+
+    // Trả về kết quả thành công
+    res.status(200).json({
+      message: "Level updated successfully.",
+      data: {
+        userId: userTree.userId,
+        level: userTree.level, // Level sau khi tăng
+      },
+    });
+  } catch (error) {
+    console.error("Error updating level:", error.message);
+    res
+      .status(500)
+      .json({ message: "Internal Server Error", error: error.message });
+  }
+});
 
 app.post("/api/user-trees-by-token", authMiddleware, async (req, res) => {
   const user = req.user;
@@ -498,7 +583,7 @@ app.post("/api/user-trees-by-token", authMiddleware, async (req, res) => {
     const userTree = await UserTree.findOne({ userId: user.userId });
 
     if (!userTree) {
-      return res.status(404).json({ message: "User tree not found" });
+      return res.status(200).json({ message: "User tree not found" });
     }
 
     res.status(200).json(userTree);
@@ -606,6 +691,8 @@ app.post("/api/user-trees/watering", authMiddleware, async (req, res) => {
   }
 });
 
+// Tăng exl
+
 // API gửi giao dịch
 app.post("/api/convert-sol", authMiddleware, async (req, res) => {
   const { signature, walletAddress, solAmount } = req.body;
@@ -619,8 +706,6 @@ app.post("/api/convert-sol", authMiddleware, async (req, res) => {
   }
   const userSub = req.user;
   if (!userSub.userId) {
-
-
     return res.status(400).json({
       success: false,
       error: "User not found",
@@ -739,7 +824,9 @@ app.post("/api/claim-sol", authMiddleware, async (req, res) => {
 
     if (balance < lamportsToSend) {
       console.error("Insufficient balance in sender wallet");
-      return res.status(500).json({ error: "System is busy. Please try again later." });
+      return res
+        .status(500)
+        .json({ error: "System is busy. Please try again later." });
     }
 
     // Giảm số điểm của người dùng
@@ -790,7 +877,6 @@ app.post("/api/claim-sol", authMiddleware, async (req, res) => {
       .json({ error: "Transaction failed", details: err.message });
   }
 });
-
 
 // Lắng nghe yêu cầu
 app.listen(port, () => {

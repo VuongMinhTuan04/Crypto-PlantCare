@@ -1,11 +1,12 @@
 import {
   getAllItems,
   getAllPurchaseByUserId,
+  updatePurchase,
   userDetailGoogle,
 } from "@/utils/authServices";
 import { useEffect, useState } from "react";
 
-const ItemShopModal = ({ show, onClose, onWateringCanUse }) => {
+const ItemShopModal = ({ show, onClose, onWateringCanUse, onShopItemClick }) => {
   const [selectedItem, setSelectedItem] = useState(null);
   const [showNotification, setShowNotification] = useState(false);
   const [notificationMessage, setNotificationMessage] = useState("");
@@ -49,30 +50,28 @@ const ItemShopModal = ({ show, onClose, onWateringCanUse }) => {
   ];
 
   const transformApiData = (apiItems, userPurchases) => {
+    let current = 1;
     return apiItems.map((item) => {
-      // Lọc các giao dịch liên quan đến item hiện tại
       const purchasesForItem = userPurchases.filter(
         (purchase) => purchase.itemId === item._id
       );
-  
-      // Tính tổng quantity cho item hiện tại
       const totalQuantity = purchasesForItem.reduce(
-        (sum, purchase) => sum + purchase.totalPurchased,
+        (sum, purchase) => sum + purchase.totalRemaining,
         0
       );
-  
+
       return {
-        id: item.itemId,
+        id: ++current,
         image: getImageForItem(item.name),
         name: item.name,
         backgroundImage: "/assets/images/Ellipse-50.png",
         icon: item.icon_img,
         quantity: totalQuantity,
-        itemId: item.itemId,
+        itemId: item._id,
+        exp: item.exp
       };
     });
   };
-  
 
   const getImageForItem = (name) => {
     const imageMap = {
@@ -90,10 +89,8 @@ const ItemShopModal = ({ show, onClose, onWateringCanUse }) => {
   }, [show]);
 
   useEffect(() => {
-    if (user?.userId) {
-      loadItems();
-    }
-  }, [user]);
+    loadItems();
+  }, []);
 
   const loadUser = async () => {
     const tokenGoogle = localStorage.getItem("tokenGoogle");
@@ -111,19 +108,16 @@ const ItemShopModal = ({ show, onClose, onWateringCanUse }) => {
   const loadItems = async () => {
     try {
       const token = JSON.parse(localStorage.getItem("tokenGoogle"));
-      if(!token){
+      if (!token) {
         console.log("No token");
-        
         return;
       }
       const [itemsResponse, purchasesResponse] = await Promise.all([
         getAllItems(),
         getAllPurchaseByUserId(token),
       ]);
+      console.log(purchasesResponse)
 
-      //console.log(purchasesResponse);
-      
-      
       if (purchasesResponse.error) {
         setShopItems([WATERING_CAN, ...FERTILIZER]);
         return;
@@ -133,9 +127,6 @@ const ItemShopModal = ({ show, onClose, onWateringCanUse }) => {
         itemsResponse,
         purchasesResponse.summary
       );
-
-      //console.log("transformedItems: ",transformedItems);
-      
 
       setShopItems([WATERING_CAN, ...transformedItems]);
     } catch (error) {
@@ -159,6 +150,8 @@ const ItemShopModal = ({ show, onClose, onWateringCanUse }) => {
   const handleUseClick = async () => {
     if (!selectedItem) return;
 
+    console.log(selectedItem)
+
     if (selectedItem.name === "Watering Can") {
       const canUseWater = onWateringCanUse();
       if (canUseWater) {
@@ -172,15 +165,31 @@ const ItemShopModal = ({ show, onClose, onWateringCanUse }) => {
       return;
     }
 
+    const token = JSON.parse(localStorage.getItem("tokenGoogle"));
     try {
+      const resp = await updatePurchase(token, selectedItem.itemId, Number(selectedItem.exp));
+      console.log(resp)
+      const remainingQuantity = resp.data.remainingQuantity || 0;
+      
       setShopItems((prevItems) =>
         prevItems.map((item) =>
           item.id === selectedItem.id
-            ? { ...item, quantity: item.quantity - 1 }
+            ? { ...item, quantity: remainingQuantity }
             : item
         )
       );
-      showNotificationWithMessage("Item used successfully!");
+
+      setSelectedItem((prev) => ({
+        ...prev,
+        quantity: remainingQuantity
+      }));
+
+      if (remainingQuantity <= 0) {
+        showNotificationWithMessage("Bạn đã dùng hết");
+      } else {
+        showNotificationWithMessage("Item used successfully!");
+      }
+      onShopItemClick()
     } catch (error) {
       console.error("Failed to use item:", error);
       showNotificationWithMessage("Failed to use item");

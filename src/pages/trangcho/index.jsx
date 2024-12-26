@@ -36,8 +36,9 @@ const GameWaitingPage = () => {
   useEffect(() => {
     const loadUserTree = async () => {
       try {
+        const token = JSON.parse(localStorage.getItem('tokenGoogle'))
         if (user?.userId) {
-          const resp = await getUserTreeByUser(user.userId);
+          const resp = await getUserTreeByUser(token);
           if (resp.message === "User tree not found") {
             setUserTree(null);
             return;
