@@ -1,20 +1,28 @@
+import { setTimeCountDown } from "@/utils/authServices";
 import { useEffect, useState } from "react";
 
-function CountdownToHarvest({ time_countdown, onComplete }) {
+function CountdownToHarvest({
+  time_countdown,
+  onComplete,
+  isClaimed,
+  setIsClaimed,
+}) {
   const TOTAL_SECONDS = 5 * 60 * 60; // 5 giờ tính bằng giây
-  
+
   const [timeLeft, setTimeLeft] = useState(() => {
     if (!time_countdown) return 0;
-    
+
     const currentTime = Date.now();
     const countdownTime = new Date(time_countdown).getTime();
-    const remainingTime = Math.max(0, Math.floor((countdownTime - currentTime) / 1000));
-    
+    const remainingTime = Math.max(
+      0,
+      Math.floor((countdownTime - currentTime) / 1000)
+    );
+
     return remainingTime;
   });
 
   const [isCompleted, setIsCompleted] = useState(false);
-  const [isClaimed, setIsClaimed] = useState(false);
 
   // Tính phần trăm thời gian còn lại
   const progressPercentage = (timeLeft / TOTAL_SECONDS) * 100;
@@ -49,16 +57,22 @@ function CountdownToHarvest({ time_countdown, onComplete }) {
       .padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
   };
 
-  const handleClaim = () => {
+  const handleClaim = async () => {
     // Xử lý logic claim ở đây
+    const token = JSON.parse(localStorage.getItem("tokenGoogle"));
+    try {
+      const resp = await setTimeCountDown(token, false);
+      console.log(resp);
+    } catch (error) {
+      console.log(error);
+    }
+
     console.log("Claimed!");
-    setIsClaimed(true);
-    // Thêm logic gọi API hoặc xử lý khác ở đây
+    setIsClaimed(true); // Đánh dấu đã claim
   };
 
-  // Nếu đã claim thì không hiển thị gì cả
   if (isClaimed) {
-    return null;
+    return null; // Nếu đã claim, không hiển thị gì cả
   }
 
   return (
@@ -66,7 +80,7 @@ function CountdownToHarvest({ time_countdown, onComplete }) {
       {!isCompleted ? (
         // Hiển thị progress bar khi chưa hoàn thành
         <div className="w-full bg-gray-200 rounded-xl h-8 overflow-hidden relative">
-          <div 
+          <div
             className="h-full bg-green-600 transition-all duration-1000 ease-linear"
             style={{ width: `${progressPercentage}%` }}
           />

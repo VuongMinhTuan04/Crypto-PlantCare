@@ -376,3 +376,39 @@ export const getUserInfo = async (token) => {
     console.log("Loi: ",error)
   }
 };
+export const updatePurchase = async (token, itemId, exp) => {
+  try {
+    const response = await axios.put(
+      `${API_URL_BE}/purchase/update`,
+      {token, itemId, exp},
+      {
+        headers: {
+          Accept: "application/json",
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      },
+    );
+    return response.data;
+  } catch (error) {
+    console.log("Loi: ",error)
+  }
+};
+export const updateLevel = async (token) => {
+  try {
+    const response = await axios.put(
+      `${API_URL_BE}/userTree/updateLevel`,
+      {token},
+      {
+        headers: {
+          Accept: "application/json",
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      },
+    );
+    return response.data;
+  } catch (error) {
+    console.log("Loi: ",error)
+  }
+};

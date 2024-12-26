@@ -1,10 +1,11 @@
 import ItemShopModal from "@/components/gameComponents/buynfts";
 import CountdownToHarvest from "@/components/growthTimer";
+import LevelDisplay from "@/components/leveldisplay";
 import {
   getTreeByUser,
   getUserByToken,
   getUserTreeByUser,
-  setTimeCountDown
+  setTimeCountDown,
 } from "@/utils/authServices";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -23,6 +24,25 @@ function GameHome() {
     PTC: 0,
     SOL: 0,
   });
+  const [isClaimed, setIsClaimed] = useState(false); // Thêm trạng thái isClaimed
+  const [reload, setReload] = useState(false);
+
+  useEffect(() => {
+    const token = JSON.parse(localStorage.getItem("tokenGoogle"));
+    const loadUserTreeByToken = async () => {
+      try {
+        const resp = await getUserTreeByUser(token);
+        setUserTree(resp);
+      } catch (error) {
+        console.log(error);
+      }
+    };
+    loadUserTreeByToken();
+  }, [user?.sub, reload]); // Thêm reload vào dependencies
+
+  const handleShopItemClick = () => {
+    setReload((prev) => !prev);
+  };
 
   useEffect(() => {
     const tokenGoogle = localStorage.getItem("tokenGoogle");
@@ -32,7 +52,7 @@ function GameHome() {
         const loadUserData = async () => {
           try {
             const resp = await getUserByToken(parsedToken);
-            console.log(resp)
+            console.log(resp);
             setUser(resp);
           } catch (error) {
             console.error("Failed to fetch user details:", error);
@@ -47,28 +67,22 @@ function GameHome() {
 
   useEffect(() => {
     const token = JSON.parse(localStorage.getItem("tokenGoogle"));
-    const loadTreeByUser = async () => {
+    const loadData = async () => {
       try {
         if (user?.sub) {
-          const resp = await getTreeByUser(user.sub);
-          setTreeAsset(resp);
+          const [treeResp, userTreeResp] = await Promise.all([
+            getTreeByUser(user.sub),
+            getUserTreeByUser(token),
+          ]);
+          setTreeAsset(treeResp);
+          setUserTree(userTreeResp);
         }
       } catch (error) {
         console.log(error);
       }
     };
-    const loadUserTreeByToken = async () => {
-      try {
-        const resp = await getUserTreeByUser(token);
-        setUserTree(resp);
-      } catch (error) {
-        console.log(error);
-      }
-    };
-    loadTreeByUser();
-    loadUserTreeByToken();
-  }, [user?.sub]);
-
+    loadData();
+  }, [user?.sub, reload]);
   useEffect(() => {
     if (userTree?.time_countdown) {
       const storedHarvestTime = localStorage.getItem("harvest-time");
@@ -87,6 +101,16 @@ function GameHome() {
 
   const handleShovelClick = () => {
     setShovelClicked((prev) => !prev);
+  };
+
+  const handleLevelUp = async () => {
+    const token = JSON.parse(localStorage.getItem("tokenGoogle"));
+    try {
+      const updatedTree = await getUserTreeByUser(token);
+      setUserTree(updatedTree); // Cập nhật state `userTree`
+    } catch (error) {
+      console.error("Failed to update user tree:", error);
+    }
   };
 
   const handleWateringCanUse = async () => {
@@ -114,17 +138,9 @@ function GameHome() {
   return (
     <div className="relative w-full h-full">
       {/* Level Image */}
-      <div className="">
-        <img
-          className="absolute top-12 left-7 w-12 h-12 z-10 bg-white px-1 py-1 rounded-full"
-          src="/assets/images/treelevel.png"
-          alt="image-level"
-        />
-        <span className="absolute top-[90px] left-7 text-black z-20 font-montserrat font-bold bg-white text-center w-12 text-[12px] rounded-xl">
-          LV 3
-        </span>
-      </div>
-
+      {userTree && (
+        <LevelDisplay userTree={userTree} onLevelUp={handleLevelUp} />
+      )}
       {/* SOL và SAO */}
       <div className="flex">
         <div className="w-20 h-8 bg-gray-200 absolute top-14 right-5 flex items-center rounded-full">
@@ -151,6 +167,8 @@ function GameHome() {
         <CountdownToHarvest
           time_countdown={userTree.time_countdown}
           onComplete={handleHarvestComplete}
+          isClaimed={isClaimed} // Truyền isClaimed xuống CountdownToHarvest
+          setIsClaimed={setIsClaimed} // Truyền setIsClaimed xuống CountdownToHarvest
         />
       )}
       {/* Basket Button */}
@@ -196,6 +214,7 @@ function GameHome() {
           <ItemShopModal
             show={shovelClicked}
             onWateringCanUse={handleWateringCanUse}
+            onShopItemClick={handleShopItemClick}
             className={`absolute top-1/2 left-12 transform translate-y-full ${
               shovelClicked ? "block" : "hidden"
             }`}
