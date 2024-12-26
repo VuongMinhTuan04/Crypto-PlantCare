@@ -154,6 +154,36 @@ const userSchema = new mongoose.Schema({
 
 const User = mongoose.model("User", userSchema);
 
+app.post("/api/update-points", authMiddleware, async (req, res) => {
+  const users = req.user
+  const { points } = req.body;
+  console.log(users)
+  // Kiểm tra dữ liệu đầu vào
+  if (!users.userId || points === undefined) {
+    return res.status(400).json({ message: "Missing sub or points" });
+  }
+
+  try {
+    const user = await User.findOneAndUpdate(
+      { sub: users.userId }, // Tìm theo `sub`
+      { $inc: { points } }, // Cộng thêm điểm
+      { new: true } // Trả về dữ liệu sau khi cập nhật
+    );
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    return res.status(200).json({
+      message: "User points updated successfully",
+      user,
+    });
+  } catch (error) {
+    console.error("Error updating points:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+});
+
 app.post("/usersbytoken", authMiddleware, async (req, res) => {
   const user = req.user; // Lấy thông tin người dùng từ middleware
   try {
@@ -498,11 +528,10 @@ app.get("/purchase/userId", authMiddleware, async (req, res) => {
       error: "User not found",
     });
   }
-  console.log("user: ", userSub);
   // Lấy danh sách purchase theo userId
   const purchases = await Purchase.find({ userId: userSub.userId });
   if (purchases.length === 0) {
-    return res.status(404).json({
+    return res.status(200).json({
       success: false,
       error: "No purchases found for this user.",
     });
@@ -679,18 +708,20 @@ app.post("/api/user-trees/watering", authMiddleware, async (req, res) => {
   const { watering } = req.body;
 
   try {
-    const currentTime = new Date();
-    currentTime.setHours(currentTime.getHours() + 5);
+    // Create update object
+    const updateData = { watering };
 
-    const updatedTimeCountdown = currentTime.toISOString();
-    console.log(user, watering, updatedTimeCountdown);
+    if (watering === true) {
+      const currentTime = new Date();
+      currentTime.setHours(currentTime.getHours() + 5);
+      updateData.time_countdown = currentTime.toISOString();
+    }
+
+    console.log(user, updateData);
 
     const updatedUserTree = await UserTree.findOneAndUpdate(
       { userId: user.userId },
-      {
-        watering,
-        time_countdown: updatedTimeCountdown,
-      },
+      updateData,
       { new: true, runValidators: true }
     );
 
@@ -700,7 +731,7 @@ app.post("/api/user-trees/watering", authMiddleware, async (req, res) => {
         .json({ message: "User tree not found", error: true });
     }
 
-    res.status(200).json({ message: "Tưới nước thành công" });
+    res.status(200).json({ message: "Tưới nước thành công", updatedUserTree});
   } catch (error) {
     res.status(500).json({ message: "Error updating user tree", error });
   }
